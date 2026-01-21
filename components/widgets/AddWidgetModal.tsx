@@ -24,6 +24,12 @@ const API_PRESETS: Record<string, string> = {
         "/api/indian-stock"
 };
 
+const PROVIDER_SUPPORT: Record<WidgetType, string[]> = {
+    chart: ["Alpha Vantage"],
+    table: ["CoinGecko", "Finnhub", "Indian API"],
+    card: ["CoinGecko", "Finnhub", "Indian API"],
+};
+
 
 export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const addWidget = useDashboardStore((s) => s.addWidget);
@@ -43,9 +49,38 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const [fields, setFields] = useState<Field[]>([]);
     const [selectedFields, setSelectedFields] = useState<string[]>([]);
 
+    const [chartVariant, setChartVariant] = useState<"line" | "candle">("line");
+    const [chartInterval, setChartInterval] = useState<
+        "daily" | "weekly" | "monthly"
+    >("daily");
+
+    const [chartX, setChartX] = useState<string | null>(null);
+    const [chartY, setChartY] = useState<string | null>(null);
+
+
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    function resetForm() {
+        setTitle("");
+        setType(null);
+        setApiUrl("");
+        setTestStatus("idle");
+        setErrorMessage("");
+        setApiResponse(null);
+        setFields([]);
+        setSelectedFields([]);
+        setRefreshInterval(15);
+
+        // ADD THESE
+        setChartX(null);
+        setChartY(null);
+        setChartVariant("line");
+        setChartInterval("daily");
+    }
+
+
 
     useEffect(() => {
         if (testStatus === "success" && apiResponse) {
@@ -90,23 +125,51 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 url: apiUrl,
                 refreshInterval,
             },
-            fields: selectedFields,
+            ...(type === "chart"
+                ? {
+                    chart: {
+                        x: chartX!,
+                        y: chartY!,
+                        interval: chartInterval,
+                        variant: chartVariant,
+                    },
+                }
+                : {
+                    fields: selectedFields,
+                }),
         });
 
+        resetForm();
         onClose();
     }
 
+
+
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/15" onClick={onClose} />
+            <div
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                onClick={() => {
+                    resetForm();
+                    onClose();
+                }}
+            />
 
-            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card/95 border border-white/10 shadow-2xl">
+
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl">
+
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
                     <h2 className="text-lg font-semibold">Create Widget</h2>
-                    <button onClick={onClose}>
+                    <button
+                        onClick={() => {
+                            resetForm();
+                            onClose();
+                        }}
+                    >
                         <X size={16} />
                     </button>
+
                 </div>
 
                 {/* Body */}
@@ -117,8 +180,27 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full rounded-md px-3 py-2 bg-white/5 border border-white/10"
+                            className="w-full rounded-md px-3 py-2 bg-background border border-border
+"
                         />
+                    </div>
+                    {/* Type */}
+                    <div>
+                        <label className="block text-sm mb-2">Display type</label>
+                        <div className="flex gap-2">
+                            {(["card", "table", "chart"] as WidgetType[]).map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => setType(t)}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm ${type === t
+                                        ? "bg-emerald-500/15 text-emerald-400"
+                                        : "bg-background border border-border"
+                                        }`}
+                                >
+                                    {t.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
                     {/* API Provider */}
@@ -127,26 +209,34 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             API Provider (optional)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
-                            {Object.entries(API_PRESETS).map(([name, url]) => (
-                                <button
-                                    key={name}
-                                    type="button"
-                                    onClick={() => {
-                                        setApiUrl(url);
-                                        setTestStatus("idle");
-                                        setFields([]);
-                                        setSelectedFields([]);
-                                    }}
-                                    className="rounded-md px-3 py-2 text-sm text-left
-          bg-white/5 border border-white/10
-          hover:bg-white/10 hover:border-white/20 transition"
-                                >
-                                    {name}
-                                </button>
-                            ))}
+                            {Object.entries(API_PRESETS).map(([name, url]) => {
+                                const isDisabled =
+                                    type ? !PROVIDER_SUPPORT[type]?.includes(name) : false;
+
+                                return (
+                                    <button
+                                        key={name}
+                                        type="button"
+                                        disabled={isDisabled}
+                                        onClick={() => {
+                                            if (isDisabled) return;
+                                            setApiUrl(url);
+                                            setTestStatus("idle");
+                                            setFields([]);
+                                            setSelectedFields([]);
+                                        }}
+                                        className={`rounded-md px-3 py-2 text-sm text-left border transition ${isDisabled
+                                            ? "opacity-40 cursor-not-allowed bg-background"
+                                            : "bg-background border-border hover:bg-white/10 hover:border-white/20"
+                                            }`}
+                                    >
+                                        {name}
+
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
-
 
                     {/* API URL */}
                     <div>
@@ -160,7 +250,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     setFields([]);
                                     setSelectedFields([]);
                                 }}
-                                className="flex-1 rounded-md px-3 py-2 bg-white/5 border border-white/10"
+                                className="flex-1 rounded-md px-3 py-2 bg-background border border-border
+"
                             />
                             <button
                                 onClick={testApi}
@@ -179,32 +270,82 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         )}
                     </div>
 
-                    {/* Fields */}
-                    {testStatus === "success" && fields.length > 0 && (
-                        <div>
-                            <label className="block text-sm mb-2">Select fields</label>
-                            <div className="max-h-40 overflow-auto border border-white/10 rounded-md">
-                                {fields.map((f) => (
-                                    <button
-                                        key={f.path}
-                                        onClick={() =>
-                                            setSelectedFields((prev) =>
-                                                prev.includes(f.path)
-                                                    ? prev.filter((x) => x !== f.path)
-                                                    : [...prev, f.path]
-                                            )
-                                        }
-                                        className={`w-full px-3 py-2 text-left text-sm ${selectedFields.includes(f.path)
-                                            ? "bg-emerald-500/10 text-emerald-400"
-                                            : "hover:bg-white/5"
-                                            }`}
-                                    >
-                                        {f.path}
-                                    </button>
-                                ))}
+                    {type === "chart" && (
+                        <div className="space-y-4">
+                            {/* Chart Type */}
+                            <div>
+                                <label className="block text-sm mb-2">Chart type</label>
+                                <div className="flex gap-2">
+                                    {["line", "candle"].map((v) => (
+                                        <button
+                                            key={v}
+                                            onClick={() => setChartVariant(v as any)}
+                                            className={`flex-1 px-3 py-2 rounded-md text-sm ${chartVariant === v
+                                                ? "bg-emerald-500/15 text-emerald-400"
+                                                : "bg-background border border-border"
+                                                }`}
+                                        >
+                                            {v.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Interval */}
+                            <div>
+                                <label className="block text-sm mb-1">Interval</label>
+                                <select
+                                    value={chartInterval}
+                                    onChange={(e) => setChartInterval(e.target.value as any)}
+                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                                >
+                                    <option value="daily">Daily</option>
+                                    <option value="weekly">Weekly</option>
+                                    <option value="monthly">Monthly</option>
+                                </select>
                             </div>
                         </div>
                     )}
+
+                    {/* Fields */}
+                    {testStatus === "success" && fields.length > 0 && type === "chart" && (
+                        <div className="space-y-4">
+                            {/* X Axis */}
+                            <div>
+                                <label className="block text-sm mb-1">Date / Time field (X axis)</label>
+                                <select
+                                    value={chartX ?? ""}
+                                    onChange={(e) => setChartX(e.target.value)}
+                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                                >
+                                    <option value="">Select field</option>
+                                    {fields.map((f) => (
+                                        <option key={f.path} value={f.path}>
+                                            {f.path}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Y Axis */}
+                            <div>
+                                <label className="block text-sm mb-1">Value field (Y axis)</label>
+                                <select
+                                    value={chartY ?? ""}
+                                    onChange={(e) => setChartY(e.target.value)}
+                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                                >
+                                    <option value="">Select field</option>
+                                    {fields.map((f) => (
+                                        <option key={f.path} value={f.path}>
+                                            {f.path}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Refresh */}
                     <div>
@@ -212,32 +353,14 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         <select
                             value={refreshInterval}
                             onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                            className="w-full rounded-md px-3 py-2 bg-white/5 border border-white/10"
+                            className="w-full rounded-md px-3 py-2 bg-background border border-border
+"
                         >
                             <option value={15}>15 seconds</option>
                             <option value={30}>30 seconds</option>
                             <option value={60}>1 minute</option>
                             <option value={300}>5 minutes</option>
                         </select>
-                    </div>
-
-                    {/* Type */}
-                    <div>
-                        <label className="block text-sm mb-2">Display type</label>
-                        <div className="flex gap-2">
-                            {(["card", "table", "chart"] as WidgetType[]).map((t) => (
-                                <button
-                                    key={t}
-                                    onClick={() => setType(t)}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm ${type === t
-                                        ? "bg-emerald-500/15 text-emerald-400"
-                                        : "bg-white/5 border border-white/10"
-                                        }`}
-                                >
-                                    {t.toUpperCase()}
-                                </button>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
@@ -247,8 +370,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     <button
                         onClick={handleAddWidget}
                         disabled={
-                            !title || !type || testStatus !== "success" || selectedFields.length === 0
+                            !title ||
+                            !type ||
+                            testStatus !== "success" ||
+                            (type === "chart" && (!chartX || !chartY)) ||
+                            (type !== "chart" && selectedFields.length === 0)
                         }
+
                         className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-40"
                     >
                         Add Widget

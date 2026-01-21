@@ -3,6 +3,9 @@
 import { X } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { useDashboardStore } from "@/store/useDashboardStore";
+import TableWidget from "./TableWidget";
+import CardWidget from "./CardWidget";
+import ChartWidget from "./ChartWidget";
 
 export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
   const removeWidget = useDashboardStore((s) => s.removeWidget);
@@ -19,8 +22,10 @@ export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
         </button>
       </div>
 
-      <div className="h-32 flex items-center justify-center text-sm text-muted">
-        {widget.type.toUpperCase()} widget (coming next)
+      <div className="mt-2">
+        {widget.type === "card" && <CardWidget widget={widget} />}
+        {widget.type === "table" && <TableWidget widget={widget} />}
+        {widget.type === "chart" && <ChartWidget widget={widget} />}
       </div>
     </div>
   );
