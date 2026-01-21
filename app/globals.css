@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@theme {
+  --color-background: rgb(var(--bg));
+  --color-foreground: rgb(var(--fg));
+  --color-card: rgb(var(--card));
+  --color-muted: rgb(var(--muted));
+  --color-border: rgb(var(--border));
+  --color-accent: rgb(var(--accent));
+}
+
+
 body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
