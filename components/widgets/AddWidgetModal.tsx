@@ -2,7 +2,9 @@
 
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { extractFields } from "@/lib/extractFields";
+import type { Field } from "@/lib/extractFields";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -13,13 +15,31 @@ export default function AddWidgetModal({
     open,
     onClose,
 }: AddWidgetModalProps) {
-    if (!open) return null;
+
     const [apiUrl, setApiUrl] = useState("");
     const [isTesting, setIsTesting] = useState(false);
     const [testStatus, setTestStatus] = useState<
         "idle" | "success" | "error"
     >("idle");
+    const [mounted, setMounted] = useState(false);
+
     const [errorMessage, setErrorMessage] = useState("");
+    const [apiResponse, setApiResponse] = useState<any>(null);
+    const [fields, setFields] = useState<Field[]>([]);
+    const [selectedFields, setSelectedFields] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (testStatus === "success" && apiResponse) {
+            const extracted = extractFields(apiResponse);
+            setFields(extracted);
+        }
+    }, [testStatus, apiResponse]);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!open || !mounted) return null;
 
     async function testApi() {
         if (!apiUrl) return;
@@ -41,7 +61,9 @@ export default function AddWidgetModal({
                 throw new Error("Response is not JSON");
             }
 
+            setApiResponse(data);
             setTestStatus("success");
+
         } catch (err: any) {
             setTestStatus("error");
             setErrorMessage(err.message || "Failed to fetch API");
@@ -130,6 +152,8 @@ export default function AddWidgetModal({
                                 onChange={(e) => {
                                     setApiUrl(e.target.value);
                                     setTestStatus("idle");
+                                    setFields([]);
+                                    setSelectedFields([]);
                                 }}
                                 placeholder="https://api.example.com/data"
                                 className="flex-1 rounded-md px-3 py-2 text-sm
@@ -150,10 +174,57 @@ export default function AddWidgetModal({
                                 {isTesting ? "Testing…" : "Test"}
                             </button>
                         </div>
+                        {testStatus === "success" && (
+                            <div className="my-3 rounded-md bg-emerald-500/10 border border-emerald-500/20
+                  text-emerald-400 px-3 py-2 text-sm">
+                                API connection successful
+                            </div>
+                        )}
 
-                        <p className="mt-1 text-xs text-muted">
-                            The API must return JSON data
-                        </p>
+                        {testStatus === "error" && (
+                            <div className="mt-3 rounded-md bg-red-500/10 border border-red-500/20
+                  text-red-400 px-3 py-2 text-sm">
+                                {errorMessage}
+                            </div>
+                        )}
+
+
+                        {testStatus === "success" && fields.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium mb-2">
+                                    Select fields to display
+                                </label>
+
+                                <div className="max-h-48 overflow-auto rounded-md border border-white/10 divide-y divide-white/10">
+                                    {fields.map((field) => (
+                                        <button
+                                            key={field.path}
+                                            type="button"
+                                            onClick={() =>
+                                                setSelectedFields((prev) =>
+                                                    prev.includes(field.path)
+                                                        ? prev.filter((f) => f !== field.path)
+                                                        : [...prev, field.path]
+                                                )
+                                            }
+                                            className={`w-full px-3 py-2 text-sm text-left transition
+            ${selectedFields.includes(field.path)
+                                                    ? "bg-emerald-500/10 text-emerald-400"
+                                                    : "hover:bg-white/5"
+                                                }`}
+                                        >
+                                            <div className="flex justify-between">
+                                                <span>{field.path}</span>
+                                                <span className="text-xs text-muted">
+                                                    {field.type}
+                                                </span>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
                     </div>
 
 
