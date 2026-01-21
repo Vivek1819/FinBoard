@@ -136,14 +136,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 }
                 : {
                     fields: selectedFields,
+                    availableFields: fields.map((f) => f.path)
                 }),
         });
 
         resetForm();
         onClose();
     }
-
-
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -180,8 +179,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full rounded-md px-3 py-2 bg-background border border-border
-"
+                            className="w-full rounded-md px-3 py-2 bg-background border border-border"
                         />
                     </div>
                     {/* Type */}
@@ -250,8 +248,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     setFields([]);
                                     setSelectedFields([]);
                                 }}
-                                className="flex-1 rounded-md px-3 py-2 bg-background border border-border
-"
+                                className="flex-1 rounded-md px-3 py-2 bg-background border border-border"
                             />
                             <button
                                 onClick={testApi}
@@ -291,6 +288,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 </div>
                             </div>
 
+
                             {/* Interval */}
                             <div>
                                 <label className="block text-sm mb-1">Interval</label>
@@ -303,6 +301,37 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     <option value="weekly">Weekly</option>
                                     <option value="monthly">Monthly</option>
                                 </select>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Fields for TABLE / CARD */}
+                    {testStatus === "success" && fields.length > 0 && type !== "chart" && (
+                        <div className="space-y-3">
+                            <label className="block text-sm font-medium">
+                                Select fields
+                            </label>
+
+                            <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
+                                {fields.map((f) => (
+                                    <label
+                                        key={f.path}
+                                        className="flex items-center gap-2 text-sm"
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedFields.includes(f.path)}
+                                            onChange={() =>
+                                                setSelectedFields((prev) =>
+                                                    prev.includes(f.path)
+                                                        ? prev.filter((x) => x !== f.path)
+                                                        : [...prev, f.path]
+                                                )
+                                            }
+                                        />
+                                        <span className="truncate">{f.path}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     )}

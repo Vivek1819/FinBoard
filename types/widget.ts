@@ -13,18 +13,13 @@ export type WidgetConfig = {
     refreshInterval: number;
   };
 
-  /**
-   * TABLE + CARD (existing)
-   * Do NOT remove yet
-   */
+  // TABLE + CARD
   fields?: string[];
+  availableFields?: string[];
 
-  /**
-   * CHART (new, proper)
-   */
   chart?: {
-    x: string;          // date / time field
-    y: string;          // price / value field
+    x: string;
+    y: string;
     interval: ChartInterval;
     variant: ChartVariant;
   };

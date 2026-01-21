@@ -11,6 +11,91 @@ export default function TableWidget({ widget }: Props) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const PAGE_SIZE = 10;
+  const [search, setSearch] = useState("");
+  const [columnFilters, setColumnFilters] = useState<
+    Record<string, string>
+  >({});
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+
+  const [page, setPage] = useState(0);
+
+  function toggleSort(field: string) {
+    if (sortBy !== field) {
+      setSortBy(field);
+      setSortDir("asc");
+    } else if (sortDir === "asc") {
+      setSortDir("desc");
+    } else {
+      setSortBy(null); // clear sort
+      setSortDir("asc");
+    }
+  }
+
+  const filteredData = data.filter((row) => {
+    // Global search
+    const matchesSearch = widget.fields?.some((field) => {
+      const value = field
+        .split(".")
+        .reduce((acc: any, key) => acc?.[key], row);
+
+      return String(value ?? "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+    });
+
+    if (!matchesSearch) return false;
+
+    return widget.fields?.every((field) => {
+      const filterValue = columnFilters[field];
+      if (!filterValue) return true;
+
+      const value = field
+        .split(".")
+        .reduce((acc: any, key) => acc?.[key], row);
+
+      if (typeof value === "number") {
+        return value >= Number(filterValue);
+      }
+
+      return String(value ?? "")
+        .toLowerCase()
+        .includes(filterValue.toLowerCase());
+    });
+  });
+
+  const sortedData = [...filteredData].sort((a, b) => {
+    if (!sortBy) return 0;
+
+    const aVal = sortBy
+      .split(".")
+      .reduce((acc: any, key) => acc?.[key], a);
+
+    const bVal = sortBy
+      .split(".")
+      .reduce((acc: any, key) => acc?.[key], b);
+
+    if (aVal == null) return 1;
+    if (bVal == null) return -1;
+
+    if (typeof aVal === "number" && typeof bVal === "number") {
+      return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+    }
+
+    return sortDir === "asc"
+      ? String(aVal).localeCompare(String(bVal))
+      : String(bVal).localeCompare(String(aVal));
+  });
+
+
+  const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
+
+  const paginatedData = sortedData.slice(
+    page * PAGE_SIZE,
+    (page + 1) * PAGE_SIZE
+  );
+
 
   async function fetchData() {
     if (!widget.api?.url) return;
@@ -34,10 +119,11 @@ export default function TableWidget({ widget }: Props) {
       const rows = Array.isArray(json)
         ? json
         : Array.isArray(json.data)
-        ? json.data
-        : [];
+          ? json.data
+          : [];
 
       setData(rows);
+      setPage(0);
     } catch (err: any) {
       if (err.message === "RATE_LIMIT") {
         setError("Rate limit reached. Retrying shortly.");
@@ -59,6 +145,15 @@ export default function TableWidget({ widget }: Props) {
 
     return () => clearInterval(interval);
   }, [widget.api?.url, widget.api?.refreshInterval]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [search]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [sortBy, sortDir]);
+
 
   if (loading) {
     return (
@@ -85,56 +180,139 @@ export default function TableWidget({ widget }: Props) {
   }
 
   return (
-    <div className="relative h-56 overflow-hidden rounded-lg border border-border">
-      <div className="max-h-full overflow-auto">
-        <table className="w-full text-sm">
-          {/* Header */}
-          <thead className="sticky top-0 z-10 bg-card border-b border-border">
-            <tr>
-              {widget.fields?.map((field) => (
-                <th
-                  key={field}
-                  className="px-3 py-2 text-left font-medium text-muted uppercase text-xs tracking-wide"
-                >
-                  {field.split(".").pop()}
-                </th>
-              ))}
-            </tr>
-          </thead>
+    <div className="relative h-full rounded-lg border border-border flex flex-col">
+      <div className="px-3 py-2 border-b border-border bg-card">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search…"
+          className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
+        />
+      </div>
 
-          {/* Body */}
-          <tbody>
-            {data.slice(0, 10).map((row, idx) => (
-              <tr
-                key={idx}
-                className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5 transition"
-              >
+      <div className="flex-1 overflow-x-auto">
+         <div className="min-w-max max-h-full overflow-y-auto">
+          <table className="min-w-max text-sm">
+            {/* Header */}
+            <thead className="sticky top-0 z-10 bg-card border-b border-border">
+              {/* Column titles */}
+              <tr>
                 {widget.fields?.map((field) => {
-                  const value = field
-                    .split(".")
-                    .reduce((acc: any, key) => acc?.[key], row);
-
-                  const isNumber = typeof value === "number";
+                  const isActive = sortBy === field;
 
                   return (
-                    <td
+                    <th
                       key={field}
-                      className={`px-3 py-2 ${
-                        isNumber ? "text-right tabular-nums" : ""
-                      }`}
+                      onClick={() => toggleSort(field)}
+                      className="px-3 py-2 text-left font-medium uppercase text-xs tracking-wide
+                   cursor-pointer select-none hover:text-foreground"
                     >
-                      {value !== undefined
-                        ? isNumber
-                          ? value.toLocaleString()
-                          : String(value)
-                        : "—"}
-                    </td>
+                      <div className="flex items-center gap-1">
+                        <span>{field.split(".").pop()}</span>
+                        {isActive && (
+                          <span className="text-xs">
+                            {sortDir === "asc" ? "↑" : "↓"}
+                          </span>
+                        )}
+                      </div>
+                    </th>
                   );
                 })}
               </tr>
-            ))}
-          </tbody>
-        </table>
+
+
+              {/* Column filters */}
+              <tr className="border-t border-border">
+                {widget.fields?.map((field) => {
+                  const sampleValue = data[0]
+                    ?.split?.(".")
+                    ? null
+                    : field
+                      .split(".")
+                      .reduce((acc: any, key) => acc?.[key], data[0]);
+
+                  const isNumber = typeof sampleValue === "number";
+
+                  return (
+                    <th key={field} className="px-2 py-1">
+                      <input
+                        type={isNumber ? "number" : "text"}
+                        placeholder={isNumber ? "Min" : "Filter"}
+                        value={columnFilters[field] ?? ""}
+                        onChange={(e) =>
+                          setColumnFilters((prev) => ({
+                            ...prev,
+                            [field]: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
+                      />
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+
+
+            {/* Body */}
+            <tbody>
+              {paginatedData.map((row, idx) => (
+                <tr
+                  key={idx}
+                  className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5 transition"
+                >
+                  {widget.fields?.map((field) => {
+                    const value = field
+                      .split(".")
+                      .reduce((acc: any, key) => acc?.[key], row);
+
+                    const isNumber = typeof value === "number";
+
+                    return (
+                      <td
+                        key={field}
+                        className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
+                          }`}
+                      >
+                        {value !== undefined
+                          ? isNumber
+                            ? value.toLocaleString()
+                            : String(value)
+                          : "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-card">
+          <span className="text-xs text-muted">
+            Page {page + 1} of {totalPages || 1}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 0))}
+              disabled={page === 0}
+              className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
+            >
+              Prev
+            </button>
+
+            <button
+              onClick={() =>
+                setPage((p) => Math.min(p + 1, totalPages - 1))
+              }
+              disabled={page >= totalPages - 1}
+              className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   );
