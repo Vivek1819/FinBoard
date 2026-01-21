@@ -1,6 +1,8 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, Settings } from "lucide-react";
+import { useState } from "react";
+import ChartConfigModal from "./ChartConfigModal";
 import { WidgetConfig } from "@/types/widget";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import TableWidget from "./TableWidget";
@@ -9,17 +11,32 @@ import ChartWidget from "./ChartWidget";
 
 export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
   const removeWidget = useDashboardStore((s) => s.removeWidget);
+  const [configOpen, setConfigOpen] = useState(false);
 
   return (
     <div className="relative rounded-xl border border-border bg-card p-4">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-medium">{widget.title}</h4>
-        <button
-          onClick={() => removeWidget(widget.id)}
-          className="text-muted hover:text-foreground transition"
-        >
-          <X size={14} />
-        </button>
+        <h4 className="text-sm font-medium truncate">
+          {widget.title}
+        </h4>
+
+        <div className="flex items-center gap-2">
+          {widget.type === "chart" && (
+            <button
+              onClick={() => setConfigOpen(true)}
+              className="text-muted hover:text-foreground transition"
+            >
+              <Settings size={14} />
+            </button>
+          )}
+
+          <button
+            onClick={() => removeWidget(widget.id)}
+            className="text-muted hover:text-foreground transition"
+          >
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="mt-2">
@@ -27,6 +44,15 @@ export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
         {widget.type === "table" && <TableWidget widget={widget} />}
         {widget.type === "chart" && <ChartWidget widget={widget} />}
       </div>
+      {widget.type === "chart" && (
+        <ChartConfigModal
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          widget={widget}
+        />
+      )}
+
     </div>
+
   );
 }

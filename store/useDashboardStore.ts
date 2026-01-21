@@ -8,7 +8,10 @@ type DashboardState = {
   addWidget: (widget: WidgetConfig) => void;
   removeWidget: (id: string) => void;
   clearWidgets: () => void;
+
+  updateWidget: (id: string, updater: (w: WidgetConfig) => WidgetConfig) => void;
 };
+
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
@@ -26,6 +29,13 @@ export const useDashboardStore = create<DashboardState>()(
         })),
 
       clearWidgets: () => set({ widgets: [] }),
+
+      updateWidget: (id, updater) =>
+        set((state) => ({
+          widgets: state.widgets.map((w) =>
+            w.id === id ? updater(w) : w
+          ),
+        }))
     }),
     {
       name: "finboard-dashboard",
