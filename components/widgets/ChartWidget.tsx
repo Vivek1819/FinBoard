@@ -9,35 +9,85 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  ComposedChart,
+  Bar,
 } from "recharts";
+import { normalizeAlphaVantage } from "@/lib/adapters/alphaVantage";
+
 
 type Props = {
   widget: WidgetConfig;
 };
 
-export default function ChartWidget({ widget }: Props) {
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function CandleShape(props: any) {
+  const { x, y, width, height, payload } = props;
+  const { open, close, high, low } = payload;
 
-  if (!widget.fields || widget.fields.length < 2) {
+  const isUp = close >= open;
+  const color = isUp ? "rgb(var(--accent))" : "rgb(var(--destructive))";
+
+  const centerX = x + width / 2;
+
+  const scaleY = (value: number) =>
+    y + height * (1 - (value - low) / (high - low || 1));
+
+  const openY = scaleY(open);
+  const closeY = scaleY(close);
+  const highY = scaleY(high);
+  const lowY = scaleY(low);
+
+  return (
+    <g>
+      {/* Wick */}
+      <line
+        x1={centerX}
+        x2={centerX}
+        y1={highY}
+        y2={lowY}
+        stroke={color}
+        strokeWidth={1}
+      />
+
+      {/* Body */}
+      <rect
+        x={x}
+        y={Math.min(openY, closeY)}
+        width={width}
+        height={Math.max(Math.abs(openY - closeY), 1)}
+        fill={color}
+        rx={1}
+      />
+    </g>
+  );
+}
+
+
+export default function ChartWidget({ widget }: Props) {
+  // Guard: only chart widgets reach here
+  if (widget.type !== "chart" || !widget.chart || !widget.api) {
     return (
       <div className="h-40 flex items-center justify-center text-sm text-muted">
-        Select at least 2 fields for chart
+        Invalid chart configuration
       </div>
     );
   }
 
-  const [xField, yField] = widget.fields;
+  const api = widget.api;
+  const chart = widget.chart;
+  const { interval, variant } = chart;
+
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function fetchData() {
-    if (!widget.api?.url) return;
-
     try {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(widget.api.url);
+      const res = await fetch(
+        `/api/alpha-vantage?symbol=IBM&interval=${interval}`
+      );
 
       if (res.status === 429) {
         throw new Error("RATE_LIMIT");
@@ -47,18 +97,21 @@ export default function ChartWidget({ widget }: Props) {
         throw new Error(`HTTP_${res.status}`);
       }
 
-      const json = await res.json();
+      const raw = await res.json();
+      const normalized = normalizeAlphaVantage(raw, interval);
 
-      const rows = Array.isArray(json)
-        ? json
-        : Array.isArray(json?.data)
-        ? json.data
-        : [];
+      const windowed =
+        interval === "daily"
+          ? normalized.slice(-120)   // ~6 months
+          : interval === "weekly"
+            ? normalized.slice(-104)   // ~2 years
+            : normalized.slice(-120);  // monthly
 
-      setData(rows);
+      setData(windowed);
+
     } catch (err: any) {
       if (err.message === "RATE_LIMIT") {
-        setError("Rate limit reached. Refreshing later.");
+        setError("Rate limit reached. Try again later.");
       } else {
         setError("Failed to load chart data.");
       }
@@ -69,18 +122,12 @@ export default function ChartWidget({ widget }: Props) {
 
   useEffect(() => {
     fetchData();
+  }, [interval]);
 
-    const interval = setInterval(
-      fetchData,
-      (widget.api?.refreshInterval ?? 30) * 1000
-    );
-
-    return () => clearInterval(interval);
-  }, [widget.api?.url, widget.api?.refreshInterval]);
 
   if (loading) {
     return (
-      <div className="h-40 flex items-center justify-center text-sm text-muted">
+      <div className="h-56 flex items-center justify-center text-sm text-muted">
         Loading chart…
       </div>
     );
@@ -88,7 +135,7 @@ export default function ChartWidget({ widget }: Props) {
 
   if (error) {
     return (
-      <div className="h-40 flex items-center justify-center text-sm text-yellow-400">
+      <div className="h-56 flex items-center justify-center text-sm text-yellow-400">
         {error}
       </div>
     );
@@ -96,51 +143,89 @@ export default function ChartWidget({ widget }: Props) {
 
   if (!data.length) {
     return (
-      <div className="h-40 flex items-center justify-center text-sm text-muted">
+      <div className="h-56 flex items-center justify-center text-sm text-muted">
         No chart data available
       </div>
     );
   }
 
+  /* ---------- LINE CHART (CLOSE PRICE) ---------- */
+  if (variant === "line") {
+    return (
+      <div className="h-56 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 11 }}
+              stroke="rgb(var(--muted))"
+            />
+            <YAxis
+              tick={{ fontSize: 11 }}
+              stroke="rgb(var(--muted))"
+              domain={[
+                (min: number) => min * 0.98,
+                (max: number) => max * 1.02,
+              ]}
+            />
+
+            <Tooltip
+              contentStyle={{
+                background: "rgb(var(--card))",
+                border: "1px solid rgb(var(--border))",
+                fontSize: "12px",
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="close"
+              stroke="rgb(var(--accent))"
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  /* ---------- CANDLE CHART ---------- */
   return (
     <div className="h-56 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <ComposedChart data={data}>
           <XAxis
-            dataKey={(row) =>
-              String(
-                xField
-                  .split(".")
-                  .reduce((acc: any, key) => acc?.[key], row)
-              )
-            }
-            tick={{ fontSize: 12 }}
-            stroke="hsl(var(--muted))"
+            dataKey="time"
+            tick={{ fontSize: 11 }}
+            stroke="rgb(var(--muted))"
           />
-
-          <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted))" />
-
+          <YAxis
+            tick={{ fontSize: 11 }}
+            stroke="rgb(var(--muted))"
+            domain={[
+              (min: number) => min * 0.98,
+              (max: number) => max * 1.02,
+            ]}
+          />
           <Tooltip
             contentStyle={{
-              background: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
+              background: "rgb(var(--card))",
+              border: "1px solid rgb(var(--border))",
               fontSize: "12px",
             }}
+            formatter={(value: any, name?: string | number) => [
+              value,
+              typeof name === "string" ? name.toUpperCase() : name,
+            ]}
           />
-
-          <Line
-            type="monotone"
-            dataKey={(row: any) =>
-              yField
-                .split(".")
-                .reduce((acc: any, key) => acc?.[key], row)
-            }
-            stroke="hsl(var(--emerald-500))"
-            strokeWidth={2}
-            dot={false}
+          <Bar
+            dataKey="close"
+            shape={<CandleShape />}
+            isAnimationActive={false}
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
+
 }
