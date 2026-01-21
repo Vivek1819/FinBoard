@@ -5,39 +5,53 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { extractFields } from "@/lib/extractFields";
 import type { Field } from "@/lib/extractFields";
+import { useDashboardStore } from "@/store/useDashboardStore";
+import type { WidgetType } from "@/types/widget";
 
 type AddWidgetModalProps = {
     open: boolean;
     onClose: () => void;
 };
 
-export default function AddWidgetModal({
-    open,
-    onClose,
-}: AddWidgetModalProps) {
+const API_PRESETS: Record<string, string> = {
+    CoinGecko:
+        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,inr",
+    "Alpha Vantage":
+        "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo",
+    Finnhub:
+        "https://finnhub.io/api/v1/quote?symbol=AAPL&token=YOUR_API_KEY",
+    "Indian API":
+        "/api/indian-stock"
+};
+
+
+export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
+    const addWidget = useDashboardStore((s) => s.addWidget);
+
+    const [mounted, setMounted] = useState(false);
+
+    const [title, setTitle] = useState("");
+    const [type, setType] = useState<WidgetType | null>(null);
+    const [refreshInterval, setRefreshInterval] = useState(15);
 
     const [apiUrl, setApiUrl] = useState("");
     const [isTesting, setIsTesting] = useState(false);
-    const [testStatus, setTestStatus] = useState<
-        "idle" | "success" | "error"
-    >("idle");
-    const [mounted, setMounted] = useState(false);
-
+    const [testStatus, setTestStatus] = useState<"idle" | "success" | "error">("idle");
     const [errorMessage, setErrorMessage] = useState("");
+
     const [apiResponse, setApiResponse] = useState<any>(null);
     const [fields, setFields] = useState<Field[]>([]);
     const [selectedFields, setSelectedFields] = useState<string[]>([]);
 
     useEffect(() => {
-        if (testStatus === "success" && apiResponse) {
-            const extracted = extractFields(apiResponse);
-            setFields(extracted);
-        }
-    }, [testStatus, apiResponse]);
-
-    useEffect(() => {
         setMounted(true);
     }, []);
+
+    useEffect(() => {
+        if (testStatus === "success" && apiResponse) {
+            setFields(extractFields(apiResponse));
+        }
+    }, [testStatus, apiResponse]);
 
     if (!open || !mounted) return null;
 
@@ -50,20 +64,13 @@ export default function AddWidgetModal({
 
         try {
             const res = await fetch(apiUrl);
-
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
-            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
-
-            if (typeof data !== "object") {
-                throw new Error("Response is not JSON");
-            }
+            if (typeof data !== "object") throw new Error("Response is not JSON");
 
             setApiResponse(data);
             setTestStatus("success");
-
         } catch (err: any) {
             setTestStatus("error");
             setErrorMessage(err.message || "Failed to fetch API");
@@ -72,80 +79,78 @@ export default function AddWidgetModal({
         }
     }
 
+    function handleAddWidget() {
+        if (!type) return;
+
+        addWidget({
+            id: crypto.randomUUID(),
+            title,
+            type,
+            api: {
+                url: apiUrl,
+                refreshInterval,
+            },
+            fields: selectedFields,
+        });
+
+        onClose();
+    }
 
     return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Backdrop — softened */}
-            <div
-                className="absolute inset-0 bg-black/15 backdrop-blur-[2px]"
-                onClick={onClose}
-            />
+            <div className="absolute inset-0 bg-black/15" onClick={onClose} />
 
-            {/* Modal container — premium surface */}
-            <div
-                className="relative z-10 w-full max-w-lg rounded-2xl
-                   bg-card/95 border border-white/10
-                   shadow-2xl backdrop-blur-xl"
-            >
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card/95 border border-white/10 shadow-2xl">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                    <h2 className="text-lg font-semibold tracking-tight">
-                        Create Widget
-                    </h2>
-                    <button
-                        onClick={onClose}
-                        className="text-muted hover:text-foreground transition"
-                        aria-label="Close modal"
-                    >
+                    <h2 className="text-lg font-semibold">Create Widget</h2>
+                    <button onClick={onClose}>
                         <X size={16} />
                     </button>
                 </div>
 
                 {/* Body */}
                 <div className="px-6 py-5 space-y-6">
-                    {/* Widget Name */}
+                    {/* Title */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">
-                            Widget name
-                        </label>
+                        <label className="block text-sm mb-1">Widget name</label>
                         <input
-                            placeholder="e.g. Bitcoin Price Tracker"
-                            className="w-full rounded-md px-3 py-2 text-sm
-                         bg-white/5 border border-white/10
-                         hover:bg-white/10 focus:bg-white/10
-                         focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full rounded-md px-3 py-2 bg-white/5 border border-white/10"
                         />
                     </div>
 
                     {/* API Provider */}
                     <div>
                         <label className="block text-sm font-medium mb-2">
-                            API Provider
+                            API Provider (optional)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
-                            {["CoinGecko", "Alpha Vantage", "Finnhub", "Indian API"].map(
-                                (provider) => (
-                                    <button
-                                        key={provider}
-                                        type="button"
-                                        className="rounded-md px-3 py-2 text-sm text-left
-                               bg-white/5 border border-white/10
-                               hover:bg-white/10 hover:border-white/20
-                               transition"
-                                    >
-                                        {provider}
-                                    </button>
-                                )
-                            )}
+                            {Object.entries(API_PRESETS).map(([name, url]) => (
+                                <button
+                                    key={name}
+                                    type="button"
+                                    onClick={() => {
+                                        setApiUrl(url);
+                                        setTestStatus("idle");
+                                        setFields([]);
+                                        setSelectedFields([]);
+                                    }}
+                                    className="rounded-md px-3 py-2 text-sm text-left
+          bg-white/5 border border-white/10
+          hover:bg-white/10 hover:border-white/20 transition"
+                                >
+                                    {name}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
-                    {/* API Endpoint */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1">
-                            API Endpoint
-                        </label>
 
+                    {/* API URL */}
+                    <div>
+                        <label className="block text-sm mb-1">API Endpoint</label>
                         <div className="flex gap-2">
                             <input
                                 value={apiUrl}
@@ -155,113 +160,81 @@ export default function AddWidgetModal({
                                     setFields([]);
                                     setSelectedFields([]);
                                 }}
-                                placeholder="https://api.example.com/data"
-                                className="flex-1 rounded-md px-3 py-2 text-sm
-                                bg-white/5 border border-white/10
-                                hover:bg-white/10 focus:bg-white/10
-                                focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                className="flex-1 rounded-md px-3 py-2 bg-white/5 border border-white/10"
                             />
-
                             <button
-                                type="button"
                                 onClick={testApi}
                                 disabled={!apiUrl || isTesting}
-                                className="shrink-0 px-4 py-2 text-sm rounded-md bg-green-600/90 text-white
-                                border border-white/10
-                                hover:bg-green-600/80 transition
-                                disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 rounded-md bg-emerald-600 text-white"
                             >
                                 {isTesting ? "Testing…" : "Test"}
                             </button>
                         </div>
+
                         {testStatus === "success" && (
-                            <div className="my-3 rounded-md bg-emerald-500/10 border border-emerald-500/20
-                  text-emerald-400 px-3 py-2 text-sm">
-                                API connection successful
-                            </div>
+                            <div className="mt-2 text-sm text-emerald-400">API connection successful</div>
                         )}
-
                         {testStatus === "error" && (
-                            <div className="mt-3 rounded-md bg-red-500/10 border border-red-500/20
-                  text-red-400 px-3 py-2 text-sm">
-                                {errorMessage}
-                            </div>
+                            <div className="mt-2 text-sm text-red-400">{errorMessage}</div>
                         )}
-
-
-                        {testStatus === "success" && fields.length > 0 && (
-                            <div>
-                                <label className="block text-sm font-medium mb-2">
-                                    Select fields to display
-                                </label>
-
-                                <div className="max-h-48 overflow-auto rounded-md border border-white/10 divide-y divide-white/10">
-                                    {fields.map((field) => (
-                                        <button
-                                            key={field.path}
-                                            type="button"
-                                            onClick={() =>
-                                                setSelectedFields((prev) =>
-                                                    prev.includes(field.path)
-                                                        ? prev.filter((f) => f !== field.path)
-                                                        : [...prev, field.path]
-                                                )
-                                            }
-                                            className={`w-full px-3 py-2 text-sm text-left transition
-            ${selectedFields.includes(field.path)
-                                                    ? "bg-emerald-500/10 text-emerald-400"
-                                                    : "hover:bg-white/5"
-                                                }`}
-                                        >
-                                            <div className="flex justify-between">
-                                                <span>{field.path}</span>
-                                                <span className="text-xs text-muted">
-                                                    {field.type}
-                                                </span>
-                                            </div>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
                     </div>
 
+                    {/* Fields */}
+                    {testStatus === "success" && fields.length > 0 && (
+                        <div>
+                            <label className="block text-sm mb-2">Select fields</label>
+                            <div className="max-h-40 overflow-auto border border-white/10 rounded-md">
+                                {fields.map((f) => (
+                                    <button
+                                        key={f.path}
+                                        onClick={() =>
+                                            setSelectedFields((prev) =>
+                                                prev.includes(f.path)
+                                                    ? prev.filter((x) => x !== f.path)
+                                                    : [...prev, f.path]
+                                            )
+                                        }
+                                        className={`w-full px-3 py-2 text-left text-sm ${selectedFields.includes(f.path)
+                                            ? "bg-emerald-500/10 text-emerald-400"
+                                            : "hover:bg-white/5"
+                                            }`}
+                                    >
+                                        {f.path}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-
-                    {/* Refresh Interval */}
+                    {/* Refresh */}
                     <div>
-                        <label className="block text-sm font-medium mb-1">
-                            Refresh interval
-                        </label>
+                        <label className="block text-sm mb-1">Refresh interval</label>
                         <select
-                            className="w-full rounded-md px-3 py-2 text-sm
-                         bg-white/5 border border-white/10
-                         hover:bg-white/10 focus:bg-white/10"
+                            value={refreshInterval}
+                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                            className="w-full rounded-md px-3 py-2 bg-white/5 border border-white/10"
                         >
-                            <option>15 seconds</option>
-                            <option>30 seconds</option>
-                            <option>1 minute</option>
-                            <option>5 minutes</option>
+                            <option value={15}>15 seconds</option>
+                            <option value={30}>30 seconds</option>
+                            <option value={60}>1 minute</option>
+                            <option value={300}>5 minutes</option>
                         </select>
                     </div>
 
-                    {/* Display Type */}
+                    {/* Type */}
                     <div>
-                        <label className="block text-sm font-medium mb-2">
-                            Display type
-                        </label>
+                        <label className="block text-sm mb-2">Display type</label>
                         <div className="flex gap-2">
-                            {["Card", "Table", "Chart"].map((type) => (
+                            {(["card", "table", "chart"] as WidgetType[]).map((t) => (
                                 <button
-                                    key={type}
-                                    type="button"
-                                    className="flex-1 rounded-md px-3 py-2 text-sm
-                             bg-white/5 border border-white/10
-                             hover:bg-white/10 hover:border-white/20
-                             transition"
+                                    key={t}
+                                    onClick={() => setType(t)}
+                                    className={`flex-1 px-3 py-2 rounded-md text-sm ${type === t
+                                        ? "bg-emerald-500/15 text-emerald-400"
+                                        : "bg-white/5 border border-white/10"
+                                        }`}
                                 >
-                                    {type}
+                                    {t.toUpperCase()}
                                 </button>
                             ))}
                         </div>
@@ -270,18 +243,13 @@ export default function AddWidgetModal({
 
                 {/* Footer */}
                 <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
+                    <button onClick={onClose}>Cancel</button>
                     <button
-                        onClick={onClose}
-                        className="px-4 py-2 text-sm rounded-md
-                       border border-white/10 hover:bg-white/5 transition"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        disabled={testStatus !== "success"}
-                        className="px-4 py-2 text-sm rounded-md
-                       bg-emerald-600/90 text-white
-                       opacity-60 cursor-not-allowed"
+                        onClick={handleAddWidget}
+                        disabled={
+                            !title || !type || testStatus !== "success" || selectedFields.length === 0
+                        }
+                        className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-40"
                     >
                         Add Widget
                     </button>
