@@ -58,6 +58,52 @@ export function normalizeApiResponse(
   }
 
   // -------------------------------
+  // FINNHUB QUOTE (Card → Performance)
+  // -------------------------------
+  if (apiUrl.includes("/finnhub/quote")) {
+    if (!json || typeof json.c !== "number") {
+      return { rows: [], tickers: [] };
+    }
+
+    const row = {
+      ticker: json.symbol,
+      company: json.symbol, // Finnhub quote has no company name
+      price: json.c,
+      percent_change: json.dp,
+      raw: json,
+    };
+
+    return {
+      rows: [row],
+      tickers: [
+        {
+          ticker: json.symbol,
+          company: json.symbol,
+        },
+      ],
+    };
+  }
+
+  // -------------------------------
+  // FINNHUB SYMBOLS (selection only)
+  // -------------------------------
+  if (apiUrl.includes("/finnhub/symbols")) {
+    const rows = (Array.isArray(json) ? json : []).map((s: any) => ({
+      ticker: s.symbol,
+      company: s.description,
+      raw: s,
+    }));
+
+    return {
+      rows,
+      tickers: rows.map(r => ({
+        ticker: r.ticker,
+        company: r.company,
+      })),
+    };
+  }
+
+  // -------------------------------
   // DEFAULT (safe fallback)
   // -------------------------------
   return { rows: [], tickers: [] };

@@ -8,6 +8,7 @@ import type { Field } from "@/lib/extractFields";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { WidgetType } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
+import { FINNHUB_POPULAR } from "@/lib/finnhubPopular";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -20,7 +21,7 @@ const API_PRESETS: Record<string, string> = {
     "Alpha Vantage":
         "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo",
     Finnhub:
-        "https://finnhub.io/api/v1/quote?symbol=AAPL&token=YOUR_API_KEY",
+        "/api/finnhub/quote",
     "Indian API":
         "/api/indian-stock"
 };
@@ -61,6 +62,10 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         "watchlist" | "gainers" | "performance" | "financial"
     >("watchlist");
     const [primaryTicker, setPrimaryTicker] = useState<string | undefined>(undefined);
+
+    const isFinnhub = apiUrl.includes("/finnhub");
+    const isFinnhubSymbols = apiUrl.includes("/finnhub/symbols");
+
 
     useEffect(() => {
         setMounted(true);
@@ -110,14 +115,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             ? normalizeApiResponse(apiUrl, apiResponse)
             : { rows: [], tickers: [] };
 
-    const allTickers = normalized.tickers;
-
+    const allTickers = isFinnhub ? FINNHUB_POPULAR : normalized.tickers;
 
     useEffect(() => {
         if (testStatus === "success" && apiResponse) {
             const extracted = extractFields(apiResponse).map(f => ({
                 ...f,
-                path: f.path.replace(/^data\./, ""), // 🔥 STRIP data.
+                path: f.path.replace(/^data\./, ""),
             }));
 
             setFields(extracted);
@@ -136,7 +140,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         setErrorMessage("");
 
         try {
-            const res = await fetch(apiUrl);
+            const testUrl =
+                isFinnhub
+                    ? "/api/finnhub/quote?symbol=AAPL"
+                    : apiUrl;
+
+            const res = await fetch(testUrl);
+
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const data = await res.json();
@@ -155,6 +165,12 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     function handleAddWidget() {
         if (!type) return;
 
+        const finalApiUrl =
+            isFinnhub && primaryTicker
+                ? `/api/finnhub/quote?symbol=${primaryTicker}`
+                : apiUrl;
+
+
         const extractedTickers =
             Array.isArray(apiResponse)
                 ? apiResponse
@@ -168,7 +184,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             title,
             type,
             api: {
-                url: apiUrl,
+                url: finalApiUrl,
                 refreshInterval,
             },
             ...(type === "chart"
@@ -465,9 +481,11 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         )}
 
                     {type === "card" &&
-                        (cardVariant === "financial" || cardVariant === "performance") &&
+                        cardVariant === "performance" &&
                         testStatus === "success" &&
-                        allTickers.length > 0 && (
+                        isFinnhub &&
+                        allTickers.length > 0
+                        && (
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium">
                                     Select stock
@@ -484,10 +502,10 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                             {company} ({ticker})
                                         </option>
                                     ))}
-
                                 </select>
                             </div>
                         )}
+
                     {/* Fields */}
                     {testStatus === "success" && fields.length > 0 && type === "chart" && (
                         <div className="space-y-4">
