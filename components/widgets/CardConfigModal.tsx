@@ -24,13 +24,18 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
   const [watchlist, setWatchlist] = useState<string[]>(
     widget.card?.watchlistTickers ?? []
   );
+  const [primaryTicker, setPrimaryTicker] = useState<string | undefined>(
+    widget.card?.primaryTicker
+  );
+
+
 
   useEffect(() => {
     setVariant(widget.card?.variant ?? "financial");
     setWatchlist(widget.card?.watchlistTickers ?? []);
     setSelectedFields(widget.fields ?? []);
+    setPrimaryTicker(widget.card?.primaryTicker);
   }, [widget]);
-
 
   if (!open || widget.type !== "card") return null;
 
@@ -45,9 +50,14 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
         variant,
         tickerField: w.card?.tickerField,
         availableTickers: w.card?.availableTickers,
+        primaryTicker:
+          variant === "financial" || variant === "performance"
+            ? primaryTicker
+            : undefined,
         watchlistTickers:
           variant === "watchlist" ? watchlist : undefined,
       }
+
     }));
 
     onClose();
@@ -56,7 +66,8 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
   const isInvalid =
     (variant === "watchlist" && watchlist.length === 0) ||
     ((variant === "financial" || variant === "performance") &&
-      selectedFields.length === 0);
+      (selectedFields.length === 0 || !primaryTicker));
+
 
   console.log("CARD CONFIG MODAL DEBUG", {
     variant,
@@ -104,6 +115,31 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
           </div>
         </div>
 
+        {(variant === "financial" || variant === "performance") &&
+          widget.card?.availableTickers &&
+          widget.card.availableTickers.length > 0 && (
+            <div className="space-y-2 mt-4">
+              <label className="block text-sm font-medium">
+                Select stock
+              </label>
+
+              <select
+                value={primaryTicker ?? ""}
+                onChange={(e) => setPrimaryTicker(e.target.value || undefined)}
+                className="w-full rounded-md px-3 py-2 bg-background border border-border"
+              >
+                <option value="">Select ticker</option>
+                {widget.card.availableTickers.map(({ ticker, company }) => (
+                  <option key={ticker} value={ticker}>
+                    {company} ({ticker})
+                  </option>
+                ))}
+
+              </select>
+            </div>
+          )}
+
+
         {/* Watchlist config */}
         {variant === "watchlist" &&
           widget.card?.availableTickers && (
@@ -113,14 +149,11 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
               </label>
 
               <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                {widget.card.availableTickers.map((ticker) => {
+                {widget.card.availableTickers.map(({ ticker, company }) => {
                   const selected = watchlist.includes(ticker);
 
                   return (
-                    <label
-                      key={ticker}
-                      className="flex items-center gap-2 text-sm"
-                    >
+                    <label key={ticker} className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
                         checked={selected}
@@ -132,7 +165,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
                           )
                         }
                       />
-                      <span>{ticker}</span>
+                      <span>{company} ({ticker})</span>
                     </label>
                   );
                 })}

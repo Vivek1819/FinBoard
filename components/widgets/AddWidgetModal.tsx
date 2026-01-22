@@ -60,7 +60,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const [cardVariant, setCardVariant] = useState<
         "watchlist" | "gainers" | "performance" | "financial"
     >("watchlist");
-
+    const [primaryTicker, setPrimaryTicker] = useState<string | undefined>(undefined);
 
     useEffect(() => {
         setMounted(true);
@@ -84,6 +84,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         setChartInterval("daily");
         setCardVariant("watchlist");
         setWatchlistTickers([]);
+        setPrimaryTicker(undefined);
     }
 
 
@@ -103,14 +104,20 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const allTickers =
         tickerField && apiResponse
             ? (Array.isArray(apiResponse) ? apiResponse : apiResponse.data ?? [])
-                .map((row: any) =>
-                    tickerField
+                .map((row: any) => {
+                    const ticker = tickerField
                         .split(".")
-                        .reduce((acc: any, k) => acc?.[k], row)
-                )
-                .filter(Boolean)
-            : [];
+                        .reduce((acc: any, k) => acc?.[k], row);
 
+                    return ticker
+                        ? {
+                            ticker,
+                            company: row.company ?? ticker,
+                        }
+                        : null;
+                })
+                .filter(Boolean) as { ticker: string; company: string }[]
+            : [];
 
     useEffect(() => {
         if (testStatus === "success" && apiResponse) {
@@ -184,7 +191,11 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             cardVariant === "watchlist"
                                 ? watchlistTickers.length > 0
                                     ? watchlistTickers
-                                    : allTickers.slice(0, 3)
+                                    : allTickers.slice(0, 3).map(t => t.ticker)
+                                : undefined,
+                        primaryTicker:
+                            cardVariant === "financial" || cardVariant === "performance"
+                                ? primaryTicker ?? undefined
                                 : undefined,
                     },
                 }),
@@ -385,7 +396,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     {testStatus === "success" &&
                         fields.length > 0 &&
                         (type === "table" ||
-                            (type === "card" && cardVariant === "financial")) && (
+                            (type === "card" && (cardVariant === "financial" || cardVariant === "performance"))) && (
 
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium">
@@ -419,45 +430,61 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     {type === "card" &&
                         cardVariant === "watchlist" &&
                         testStatus === "success" &&
-                        apiResponse &&
-                        tickerField && (
+                        allTickers.length > 0 && (
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium">
                                     Select watchlist items
                                 </label>
 
                                 <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                                    {(Array.isArray(apiResponse) ? apiResponse : apiResponse.data ?? []).map(
-                                        (row: any) => {
-                                            const ticker = tickerField
-                                                .split(".")
-                                                .reduce((acc: any, k) => acc?.[k], row);
+                                    {allTickers.map(({ ticker, company }) => {
+                                        const selected = watchlistTickers.includes(ticker);
 
-                                            if (!ticker) return null;
-
-                                            return (
-                                                <label key={ticker} className="flex items-center gap-2 text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={watchlistTickers.includes(ticker)}
-                                                        onChange={() =>
-                                                            setWatchlistTickers((prev) =>
-                                                                prev.includes(ticker)
-                                                                    ? prev.filter((t) => t !== ticker)
-                                                                    : [...prev, ticker]
-                                                            )
-                                                        }
-                                                    />
-                                                    <span className="truncate">{ticker}</span>
-                                                </label>
-                                            );
-                                        }
-                                    )}
+                                        return (
+                                            <label key={ticker} className="flex items-center gap-2 text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() =>
+                                                        setWatchlistTickers(prev =>
+                                                            selected
+                                                                ? prev.filter(t => t !== ticker)
+                                                                : [...prev, ticker]
+                                                        )
+                                                    }
+                                                />
+                                                <span>{company} ({ticker})</span>
+                                            </label>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
 
+                    {type === "card" &&
+                        (cardVariant === "financial" || cardVariant === "performance") &&
+                        testStatus === "success" &&
+                        allTickers.length > 0 && (
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium">
+                                    Select stock
+                                </label>
 
+                                <select
+                                    value={primaryTicker ?? ""}
+                                    onChange={(e) => setPrimaryTicker(e.target.value)}
+                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                                >
+                                    <option value="">Select Stock</option>
+                                    {allTickers.map(({ ticker, company }) => (
+                                        <option key={ticker} value={ticker}>
+                                            {company} ({ticker})
+                                        </option>
+                                    ))}
+
+                                </select>
+                            </div>
+                        )}
                     {/* Fields */}
                     {testStatus === "success" && fields.length > 0 && type === "chart" && (
                         <div className="space-y-4">

@@ -9,13 +9,22 @@ export type CardVariant =
   | "performance"
   | "financial";
 
+export type TickerOption = {
+  ticker: string;
+  company: string;
+};
+
 export type CardConfig = {
   variant: CardVariant;
 
-  // watchlist-only
   tickerField?: string;
-  availableTickers?: string[];
+
+  // 🔥 CHANGE THIS
+  availableTickers?: TickerOption[];
+
   watchlistTickers?: string[];
+
+  primaryTicker?: string;
 };
 
 export type WidgetConfig = {

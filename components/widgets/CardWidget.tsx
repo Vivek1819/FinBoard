@@ -14,7 +14,7 @@ export default function CardWidget({ widget }: Props) {
     const [error, setError] = useState<string | null>(null);
     const variant = widget.card?.variant ?? "financial";
 
-    const fields = widget.fields!;
+    const fields = widget.fields ?? [];
 
     async function fetchData() {
         if (!widget.api?.url) return;
@@ -37,15 +37,12 @@ export default function CardWidget({ widget }: Props) {
 
             if (Array.isArray(json)) {
                 setItems(json);
-                setItem(json[0] ?? null);
             } else if (Array.isArray(json?.data)) {
                 setItems(json.data);
                 setItem(json.data[0] ?? null);
             } else {
-                setItems([]);
-                setItem(json);
+                setItems([json]);
             }
-
 
         } catch (err: any) {
             if (err.message === "RATE_LIMIT") {
@@ -68,6 +65,34 @@ export default function CardWidget({ widget }: Props) {
 
         return () => clearInterval(interval);
     }, [widget.api?.url, widget.api?.refreshInterval]);
+
+    useEffect(() => {
+        if (!items.length) return;
+
+        if (
+            (variant === "financial" || variant === "performance") &&
+            widget.card?.primaryTicker &&
+            widget.card?.tickerField
+        ) {
+            const match = items.find((row) => {
+                const t = widget.card!.tickerField!
+                    .split(".")
+                    .reduce((acc: any, k) => acc?.[k], row);
+                return t === widget.card!.primaryTicker;
+            });
+
+            setItem(match ?? null);
+        } else {
+            setItem(items[0] ?? null);
+        }
+    }, [
+        items,
+        variant,
+        widget.card?.primaryTicker,
+        widget.card?.tickerField,
+    ]);
+
+
 
     if (loading) {
         return (
@@ -258,9 +283,12 @@ export default function CardWidget({ widget }: Props) {
 
 
     const primaryField = fields[0];
+    const source = item;
+
     const primaryValue = primaryField
         .split(".")
-        .reduce((acc: any, key) => acc?.[key], item);
+        .reduce((acc: any, key) => acc?.[key], source);
+
 
     return (
         <div className="flex h-full flex-col justify-between">
