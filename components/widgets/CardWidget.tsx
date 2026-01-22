@@ -31,6 +31,29 @@ export default function CardWidget({ widget }: Props) {
             setLoading(true);
             setError(null);
 
+            const isFinnhub = widget.api.url.includes("/finnhub/quote");
+            const watchlist = widget.card?.watchlistTickers ?? [];
+
+            if (variant === "watchlist" && isFinnhub && watchlist.length > 0) {
+                // 🔁 fan-out: one request per ticker
+                const results = await Promise.all(
+                    watchlist.map(async (ticker) => {
+                        const res = await fetch(`/api/finnhub/quote?symbol=${ticker}`);
+                        if (!res.ok) return null;
+
+                        const json = await res.json();
+                        const normalized = normalizeApiResponse(
+                            `/api/finnhub/quote?symbol=${ticker}`,
+                            json
+                        );
+
+                        return normalized.rows[0] ?? null;
+                    })
+                );
+
+                setItems(results.filter(Boolean));
+                return;
+            }
             const res = await fetch(widget.api.url);
 
             if (res.status === 429) {
@@ -211,8 +234,8 @@ export default function CardWidget({ widget }: Props) {
                                 </div>
                                 <div
                                     className={`text-xs font-medium ${stock.percent_change >= 0
-                                            ? "text-emerald-400"
-                                            : "text-red-400"
+                                        ? "text-emerald-400"
+                                        : "text-red-400"
                                         }`}
                                 >
                                     {stock.percent_change}%
