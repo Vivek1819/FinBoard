@@ -9,6 +9,7 @@ import TableWidget from "./TableWidget";
 import CardWidget from "./CardWidget";
 import ChartWidget from "./ChartWidget";
 import TableConfigModal from "./TableConfigModal";
+import CardConfigModal from "./CardConfigModal";
 
 export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
   const removeWidget = useDashboardStore((s) => s.removeWidget);
@@ -27,7 +28,7 @@ export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
         </h4>
 
         <div className="flex items-center gap-2">
-          {(widget.type === "chart" || widget.type === "table") && (
+          {(widget.type === "chart" || widget.type === "table" || widget.type === "card") && (
             <button
               onClick={() => setConfigOpen(true)}
               className="text-muted hover:text-foreground transition"
@@ -62,6 +63,14 @@ export default function WidgetShell({ widget }: { widget: WidgetConfig }) {
 
       {widget.type === "table" && (
         <TableConfigModal
+          open={configOpen}
+          onClose={() => setConfigOpen(false)}
+          widget={widget}
+        />
+      )}
+
+      {widget.type === "card" && (
+        <CardConfigModal
           open={configOpen}
           onClose={() => setConfigOpen(false)}
           widget={widget}

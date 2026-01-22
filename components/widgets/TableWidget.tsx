@@ -191,7 +191,7 @@ export default function TableWidget({ widget }: Props) {
       </div>
 
       <div className="flex-1 overflow-x-auto">
-         <div className="min-w-max max-h-full overflow-y-auto">
+        <div className="min-w-max max-h-full overflow-y-auto">
           <table className="min-w-max text-sm">
             {/* Header */}
             <thead className="sticky top-0 z-10 bg-card border-b border-border">

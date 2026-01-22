@@ -53,9 +53,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const [chartInterval, setChartInterval] = useState<
         "daily" | "weekly" | "monthly"
     >("daily");
+    const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
 
     const [chartX, setChartX] = useState<string | null>(null);
     const [chartY, setChartY] = useState<string | null>(null);
+    const [cardVariant, setCardVariant] = useState<
+        "watchlist" | "gainers" | "performance" | "financial"
+    >("watchlist");
 
 
     useEffect(() => {
@@ -78,8 +82,34 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         setChartY(null);
         setChartVariant("line");
         setChartInterval("daily");
+        setCardVariant("watchlist");
+        setWatchlistTickers([]);
     }
 
+
+    function inferTickerField(fields: Field[]) {
+        return (
+            fields.find((f) =>
+                ["ticker", "symbol", "code"].some((k) =>
+                    f.path.toLowerCase().includes(k)
+                )
+            )?.path
+        );
+    }
+
+
+    const tickerField = inferTickerField(fields);
+
+    const allTickers =
+        tickerField && apiResponse
+            ? (Array.isArray(apiResponse) ? apiResponse : apiResponse.data ?? [])
+                .map((row: any) =>
+                    tickerField
+                        .split(".")
+                        .reduce((acc: any, k) => acc?.[k], row)
+                )
+                .filter(Boolean)
+            : [];
 
 
     useEffect(() => {
@@ -87,6 +117,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             setFields(extractFields(apiResponse));
         }
     }, [testStatus, apiResponse]);
+
 
     if (!open || !mounted) return null;
 
@@ -136,7 +167,18 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 }
                 : {
                     fields: selectedFields,
-                    availableFields: fields.map((f) => f.path)
+                    availableFields: fields.map((f) => f.path),
+                    card: {
+                        variant: cardVariant,
+
+                        ...(cardVariant === "watchlist"
+                            ? {
+                                tickerField,
+                                availableTickers: allTickers,
+                                watchlistTickers,
+                            }
+                            : {}),
+                    },
                 }),
         });
 
@@ -200,6 +242,32 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             ))}
                         </div>
                     </div>
+
+                    {type === "card" && (
+                        <div>
+                            <label className="block text-sm mb-2">Card type</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    ["watchlist", "Watchlist"],
+                                    ["gainers", "Market Gainers"],
+                                    ["performance", "Performance"],
+                                    ["financial", "Financial Data"],
+                                ].map(([value, label]) => (
+                                    <button
+                                        key={value}
+                                        onClick={() => setCardVariant(value as any)}
+                                        className={`px-3 py-2 rounded-md text-sm border ${cardVariant === value
+                                            ? "bg-emerald-500/15 text-emerald-400"
+                                            : "bg-background border-border"
+                                            }`}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* API Provider */}
                     <div>
@@ -306,35 +374,81 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     )}
 
                     {/* Fields for TABLE / CARD */}
-                    {testStatus === "success" && fields.length > 0 && type !== "chart" && (
-                        <div className="space-y-3">
-                            <label className="block text-sm font-medium">
-                                Select fields
-                            </label>
+                    {testStatus === "success" &&
+                        fields.length > 0 &&
+                        (type === "table" ||
+                            (type === "card" && cardVariant === "financial")) && (
 
-                            <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                                {fields.map((f) => (
-                                    <label
-                                        key={f.path}
-                                        className="flex items-center gap-2 text-sm"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={selectedFields.includes(f.path)}
-                                            onChange={() =>
-                                                setSelectedFields((prev) =>
-                                                    prev.includes(f.path)
-                                                        ? prev.filter((x) => x !== f.path)
-                                                        : [...prev, f.path]
-                                                )
-                                            }
-                                        />
-                                        <span className="truncate">{f.path}</span>
-                                    </label>
-                                ))}
+                            <div className="space-y-3">
+                                <label className="block text-sm font-medium">
+                                    Select fields
+                                </label>
+
+                                <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
+                                    {fields.map((f) => (
+                                        <label
+                                            key={f.path}
+                                            className="flex items-center gap-2 text-sm"
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedFields.includes(f.path)}
+                                                onChange={() =>
+                                                    setSelectedFields((prev) =>
+                                                        prev.includes(f.path)
+                                                            ? prev.filter((x) => x !== f.path)
+                                                            : [...prev, f.path]
+                                                    )
+                                                }
+                                            />
+                                            <span className="truncate">{f.path}</span>
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
+
+                    {type === "card" &&
+                        cardVariant === "watchlist" &&
+                        testStatus === "success" &&
+                        apiResponse &&
+                        tickerField && (
+                            <div className="space-y-3">
+                                <label className="block text-sm font-medium">
+                                    Select watchlist items
+                                </label>
+
+                                <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
+                                    {(Array.isArray(apiResponse) ? apiResponse : apiResponse.data ?? []).map(
+                                        (row: any) => {
+                                            const ticker = tickerField
+                                                .split(".")
+                                                .reduce((acc: any, k) => acc?.[k], row);
+
+                                            if (!ticker) return null;
+
+                                            return (
+                                                <label key={ticker} className="flex items-center gap-2 text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={watchlistTickers.includes(ticker)}
+                                                        onChange={() =>
+                                                            setWatchlistTickers((prev) =>
+                                                                prev.includes(ticker)
+                                                                    ? prev.filter((t) => t !== ticker)
+                                                                    : [...prev, ticker]
+                                                            )
+                                                        }
+                                                    />
+                                                    <span className="truncate">{ticker}</span>
+                                                </label>
+                                            );
+                                        }
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
 
                     {/* Fields */}
                     {testStatus === "success" && fields.length > 0 && type === "chart" && (
@@ -403,9 +517,14 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             !type ||
                             testStatus !== "success" ||
                             (type === "chart" && (!chartX || !chartY)) ||
-                            (type !== "chart" && selectedFields.length === 0)
+                            (type === "table" && selectedFields.length === 0) ||
+                            (type === "card" &&
+                                cardVariant === "financial" &&
+                                selectedFields.length === 0) ||
+                            (type === "card" &&
+                                cardVariant === "watchlist" &&
+                                watchlistTickers.length === 0)
                         }
-
                         className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-40"
                     >
                         Add Widget
