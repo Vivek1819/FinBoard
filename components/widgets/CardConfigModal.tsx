@@ -42,31 +42,50 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
   function save() {
     updateWidget(widget.id, (w) => ({
       ...w,
+
+      // ✅ Only update fields for FINANCIAL cards
       fields:
-        variant === "financial" || variant === "performance"
+        variant === "financial"
           ? selectedFields
           : w.fields,
-      card: {
-        variant,
-        tickerField: w.card?.tickerField,
-        availableTickers: w.card?.availableTickers,
-        primaryTicker:
-          variant === "financial" || variant === "performance"
-            ? primaryTicker
-            : undefined,
-        watchlistTickers:
-          variant === "watchlist" ? watchlist : undefined,
-      }
 
+      card: {
+        // ✅ MERGE instead of replace
+        ...w.card,
+
+        variant,
+
+        // ✅ Preserve availableTickers always
+        availableTickers: w.card?.availableTickers,
+
+        // ✅ Preserve tickerField
+        tickerField: w.card?.tickerField,
+
+        // ✅ Only update primaryTicker when relevant
+        ...(variant === "financial" || variant === "performance"
+          ? { primaryTicker }
+          : {}),
+
+        // ✅ Only update watchlistTickers when relevant
+        ...(variant === "watchlist"
+          ? { watchlistTickers: watchlist }
+          : {}),
+      },
     }));
 
     onClose();
   }
 
+
   const isInvalid =
     (variant === "watchlist" && watchlist.length === 0) ||
-    ((variant === "financial" || variant === "performance") &&
-      (selectedFields.length === 0 || !primaryTicker));
+
+    (variant === "financial" &&
+      (selectedFields.length === 0 || !primaryTicker)) ||
+
+    (variant === "performance" &&
+      !primaryTicker);
+
 
 
   console.log("CARD CONFIG MODAL DEBUG", {
