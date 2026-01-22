@@ -23,7 +23,15 @@ export default function TableWidget({ widget }: Props) {
   const [page, setPage] = useState(0);
 
   const tickerField = widget.card?.tickerField ?? "ticker";
+  const resolveValue = (row: any, field: string) =>
+    field.split(".").reduce((acc, k) => acc?.[k], row.raw ?? row);
 
+
+  function getValue(row: any, field: string) {
+    return field
+      .split(".")
+      .reduce((acc: any, k) => acc?.[k], row.raw ?? row);
+  }
 
   function toggleSort(field: string) {
     if (sortBy !== field) {
@@ -50,9 +58,7 @@ export default function TableWidget({ widget }: Props) {
       getCompany(row).toLowerCase().includes(search.toLowerCase()) ||
       getTicker(row).toLowerCase().includes(search.toLowerCase()) ||
       widget.fields?.some((field) => {
-        const value = field
-          .split(".")
-          .reduce((acc: any, key) => acc?.[key], row);
+        const value = getValue(row, field);
 
         return String(value ?? "")
           .toLowerCase()
@@ -65,9 +71,7 @@ export default function TableWidget({ widget }: Props) {
       const filterValue = columnFilters[field];
       if (!filterValue) return true;
 
-      const value = field
-        .split(".")
-        .reduce((acc: any, key) => acc?.[key], row);
+      const value = getValue(row, field);
 
       if (typeof value === "number") {
         return value >= Number(filterValue);
@@ -82,26 +86,25 @@ export default function TableWidget({ widget }: Props) {
   const sortedData = [...filteredData].sort((a, b) => {
     if (!sortBy) return 0;
 
-    const aVal = sortBy
-      .split(".")
-      .reduce((acc: any, key) => acc?.[key], a);
-
-    const bVal = sortBy
-      .split(".")
-      .reduce((acc: any, key) => acc?.[key], b);
+    const aVal = getValue(a, sortBy);
+    const bVal = getValue(b, sortBy);
 
     if (aVal == null) return 1;
     if (bVal == null) return -1;
 
-    if (typeof aVal === "number" && typeof bVal === "number") {
-      return sortDir === "asc" ? aVal - bVal : bVal - aVal;
+    const aNum = Number(aVal);
+    const bNum = Number(bVal);
+
+    // ✅ numeric sort if both are valid numbers
+    if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+      return sortDir === "asc" ? aNum - bNum : bNum - aNum;
     }
 
+    // 🔁 fallback to string sort
     return sortDir === "asc"
       ? String(aVal).localeCompare(String(bVal))
       : String(bVal).localeCompare(String(aVal));
   });
-
 
   const totalPages = Math.ceil(sortedData.length / PAGE_SIZE);
 
@@ -245,7 +248,7 @@ export default function TableWidget({ widget }: Props) {
               {widget.fields?.map((field) => {
                 const sampleValue = field
                   .split(".")
-                  .reduce((acc: any, key) => acc?.[key], data[0]);
+                  .reduce((acc: any, key) => acc?.[key], data[0]?.raw);
 
                 const isNumber = typeof sampleValue === "number";
 
@@ -290,10 +293,7 @@ export default function TableWidget({ widget }: Props) {
 
                 {/* Metrics */}
                 {widget.fields?.map((field) => {
-                  const value = row.raw
-                    ? field.split(".").reduce((acc: any, k) => acc?.[k], row.raw)
-                    : row[field];
-
+                  const value = getValue(row, field);
 
                   const isNumber = typeof value === "number";
 

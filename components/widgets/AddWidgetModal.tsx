@@ -115,9 +115,15 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
     useEffect(() => {
         if (testStatus === "success" && apiResponse) {
-            setFields(extractFields(apiResponse));
+            const extracted = extractFields(apiResponse).map(f => ({
+                ...f,
+                path: f.path.replace(/^data\./, ""), // 🔥 STRIP data.
+            }));
+
+            setFields(extracted);
         }
     }, [testStatus, apiResponse]);
+
 
 
     if (!open || !mounted) return null;
@@ -175,7 +181,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     },
                 }
                 : {
-                    fields: selectedFields,
+                    fields: selectedFields.map(f => f.replace(/^data\./, "")),
                     availableFields: fields
                         .map((f) => f.path)
                         .filter((path) => !isIdentityField(path)),

@@ -19,7 +19,7 @@ export async function GET() {
     }
 
     const data = await res.json();
-    return NextResponse.json(data);
+    return NextResponse.json({ data });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch Indian market data" },
