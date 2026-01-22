@@ -9,6 +9,7 @@ import { useDashboardStore } from "@/store/useDashboardStore";
 import type { WidgetType } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import { FINNHUB_POPULAR } from "@/lib/finnhubPopular";
+import { ALPHA_VANTAGE_SYMBOLS } from "@/lib/alphaVantageSymbols";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -55,17 +56,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         "daily" | "weekly" | "monthly"
     >("daily");
     const [watchlistTickers, setWatchlistTickers] = useState<string[]>([]);
-
-    const [chartX, setChartX] = useState<string | null>(null);
-    const [chartY, setChartY] = useState<string | null>(null);
     const [cardVariant, setCardVariant] = useState<
         "watchlist" | "gainers" | "performance" | "financial"
     >("watchlist");
     const [primaryTicker, setPrimaryTicker] = useState<string | undefined>(undefined);
 
     const isFinnhub = apiUrl.includes("/finnhub");
-    const isFinnhubSymbols = apiUrl.includes("/finnhub/symbols");
-
+    const [chartTicker, setChartTicker] = useState<string>("IBM");
 
     useEffect(() => {
         setMounted(true);
@@ -87,10 +84,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         setFields([]);
         setSelectedFields([]);
         setRefreshInterval(15);
+        setChartTicker("IBM");
 
-        // ADD THESE
-        setChartX(null);
-        setChartY(null);
         setChartVariant("line");
         setChartInterval("daily");
         setCardVariant("watchlist");
@@ -183,25 +178,27 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             id: crypto.randomUUID(),
             title,
             type,
-            api: {
-                url: finalApiUrl,
-                refreshInterval,
-            },
+
             ...(type === "chart"
                 ? {
+                    api: {
+                        url: `/api/alpha-vantage?symbol=${chartTicker}&interval=${chartInterval}`,
+                        refreshInterval,
+                    },
                     chart: {
-                        x: chartX!,
-                        y: chartY!,
                         interval: chartInterval,
                         variant: chartVariant,
                     },
                 }
                 : {
+                    api: {
+                        url: finalApiUrl,
+                        refreshInterval,
+                    },
                     fields: selectedFields.map(f => f.replace(/^data\./, "")),
                     availableFields: fields
                         .map((f) => f.path)
                         .filter((path) => !isIdentityField(path)),
-
                     card: {
                         variant: cardVariant,
                         tickerField: "ticker",
@@ -219,7 +216,6 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     },
                 }),
         });
-
         resetForm();
         onClose();
     }
@@ -394,6 +390,25 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 </div>
                             </div>
 
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium">
+                                    Select stock
+                                </label>
+
+                                <select
+                                    value={chartTicker}
+                                    onChange={(e) => setChartTicker(e.target.value)}
+                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                                >
+                                    {ALPHA_VANTAGE_SYMBOLS.map(s => (
+                                        <option key={s.ticker} value={s.ticker}>
+                                            {s.company} ({s.ticker})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+
 
                             {/* Interval */}
                             <div>
@@ -506,46 +521,6 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             </div>
                         )}
 
-                    {/* Fields */}
-                    {testStatus === "success" && fields.length > 0 && type === "chart" && (
-                        <div className="space-y-4">
-                            {/* X Axis */}
-                            <div>
-                                <label className="block text-sm mb-1">Date / Time field (X axis)</label>
-                                <select
-                                    value={chartX ?? ""}
-                                    onChange={(e) => setChartX(e.target.value)}
-                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                                >
-                                    <option value="">Select field</option>
-                                    {fields.map((f) => (
-                                        <option key={f.path} value={f.path}>
-                                            {f.path}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            {/* Y Axis */}
-                            <div>
-                                <label className="block text-sm mb-1">Value field (Y axis)</label>
-                                <select
-                                    value={chartY ?? ""}
-                                    onChange={(e) => setChartY(e.target.value)}
-                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                                >
-                                    <option value="">Select field</option>
-                                    {fields.map((f) => (
-                                        <option key={f.path} value={f.path}>
-                                            {f.path}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                        </div>
-                    )}
-
-
                     {/* Refresh */}
                     <div>
                         <label className="block text-sm mb-1">Refresh interval</label>
@@ -572,7 +547,6 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             !title ||
                             !type ||
                             testStatus !== "success" ||
-                            (type === "chart" && (!chartX || !chartY)) ||
                             (type === "table" && selectedFields.length === 0) ||
                             (type === "card" &&
                                 cardVariant === "financial" &&

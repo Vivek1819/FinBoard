@@ -85,9 +85,7 @@ export default function ChartWidget({ widget }: Props) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(
-        `/api/alpha-vantage?symbol=IBM&interval=${interval}`
-      );
+      const res = await fetch(api.url);
 
       if (res.status === 429) {
         throw new Error("RATE_LIMIT");

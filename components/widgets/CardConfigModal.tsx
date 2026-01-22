@@ -172,7 +172,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
                   const selected = watchlist.includes(ticker);
 
                   return (
-                    <label key={ticker} className="flex items-center gap-2 text-sm">
+                    <label key={`${ticker}-${company}`} className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
                         checked={selected}

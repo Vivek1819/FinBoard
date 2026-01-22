@@ -6,30 +6,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
 
   const symbol = searchParams.get("symbol");
-  const interval = searchParams.get("interval"); // daily | weekly | monthly
+  const func = searchParams.get("function"); // TIME_SERIES_DAILY etc.
 
-  if (!symbol || !interval) {
+  if (!symbol || !func) {
     return NextResponse.json(
-      { error: "Missing symbol or interval" },
+      { error: "Missing symbol or function" },
       { status: 400 }
     );
   }
 
-  const functionMap: Record<string, string> = {
-    daily: "TIME_SERIES_DAILY",
-    weekly: "TIME_SERIES_WEEKLY",
-    monthly: "TIME_SERIES_MONTHLY",
-  };
-
-  const apiFunction = functionMap[interval];
-  if (!apiFunction) {
-    return NextResponse.json(
-      { error: "Invalid interval" },
-      { status: 400 }
-    );
-  }
-
-  const url = `${BASE_URL}?function=${apiFunction}&symbol=${symbol}&apikey=${process.env.ALPHAVANTAGE_API_KEY}`;
+  const url = `${BASE_URL}?function=${func}&symbol=${symbol}&apikey=${process.env.ALPHAVANTAGE_API_KEY}`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -43,7 +29,7 @@ export async function GET(req: Request) {
 
     const data = await res.json();
 
-    // Alpha Vantage rate limit error
+    // Alpha Vantage rate limit
     if (data.Note) {
       return NextResponse.json(
         { error: "Rate limit exceeded" },

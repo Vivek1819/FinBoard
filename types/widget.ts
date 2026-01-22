@@ -38,8 +38,6 @@ export type WidgetConfig = {
   card?: CardConfig;
 
   chart?: {
-    x: string;
-    y: string;
     interval: ChartInterval;
     variant: ChartVariant;
   };
