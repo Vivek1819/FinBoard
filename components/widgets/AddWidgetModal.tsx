@@ -148,6 +148,14 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     function handleAddWidget() {
         if (!type) return;
 
+        const extractedTickers =
+            Array.isArray(apiResponse)
+                ? apiResponse
+                    .map((row: any) => row.ticker)
+                    .filter(Boolean)
+                : [];
+
+
         addWidget({
             id: crypto.randomUUID(),
             title,
@@ -170,14 +178,14 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     availableFields: fields.map((f) => f.path),
                     card: {
                         variant: cardVariant,
-
-                        ...(cardVariant === "watchlist"
-                            ? {
-                                tickerField,
-                                availableTickers: allTickers,
-                                watchlistTickers,
-                            }
-                            : {}),
+                        tickerField: tickerField ?? "ticker",
+                        availableTickers: allTickers,
+                        watchlistTickers:
+                            cardVariant === "watchlist"
+                                ? watchlistTickers.length > 0
+                                    ? watchlistTickers
+                                    : allTickers.slice(0, 3)
+                                : undefined,
                     },
                 }),
         });
