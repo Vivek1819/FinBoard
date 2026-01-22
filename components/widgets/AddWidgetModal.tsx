@@ -66,6 +66,12 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
         setMounted(true);
     }, []);
 
+    const isIdentityField = (path: string) =>
+        ["ticker", "symbol", "company", "name"].some((k) =>
+            path.toLowerCase().includes(k)
+        );
+
+
     function resetForm() {
         setTitle("");
         setType(null);
@@ -182,7 +188,10 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 }
                 : {
                     fields: selectedFields,
-                    availableFields: fields.map((f) => f.path),
+                    availableFields: fields
+                        .map((f) => f.path)
+                        .filter((path) => !isIdentityField(path)),
+
                     card: {
                         variant: cardVariant,
                         tickerField: tickerField ?? "ticker",
@@ -396,7 +405,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     {testStatus === "success" &&
                         fields.length > 0 &&
                         (type === "table" ||
-                            (type === "card" && (cardVariant === "financial" || cardVariant === "performance"))) && (
+                            (type === "card" && cardVariant === "financial" )) && (
 
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium">
@@ -404,25 +413,25 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 </label>
 
                                 <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                                    {fields.map((f) => (
-                                        <label
-                                            key={f.path}
-                                            className="flex items-center gap-2 text-sm"
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedFields.includes(f.path)}
-                                                onChange={() =>
-                                                    setSelectedFields((prev) =>
-                                                        prev.includes(f.path)
-                                                            ? prev.filter((x) => x !== f.path)
-                                                            : [...prev, f.path]
-                                                    )
-                                                }
-                                            />
-                                            <span className="truncate">{f.path}</span>
-                                        </label>
-                                    ))}
+                                    {fields
+                                        .filter((f) => !isIdentityField(f.path))
+                                        .map((f) => (
+                                            <label key={f.path} className="flex items-center gap-2 text-sm">
+
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedFields.includes(f.path)}
+                                                    onChange={() =>
+                                                        setSelectedFields((prev) =>
+                                                            prev.includes(f.path)
+                                                                ? prev.filter((x) => x !== f.path)
+                                                                : [...prev, f.path]
+                                                        )
+                                                    }
+                                                />
+                                                <span className="truncate">{f.path}</span>
+                                            </label>
+                                        ))}
                                 </div>
                             </div>
                         )}

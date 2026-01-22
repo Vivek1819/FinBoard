@@ -21,6 +21,9 @@ export default function TableWidget({ widget }: Props) {
 
   const [page, setPage] = useState(0);
 
+  const tickerField = widget.card?.tickerField ?? "ticker";
+
+
   function toggleSort(field: string) {
     if (sortBy !== field) {
       setSortBy(field);
@@ -32,18 +35,28 @@ export default function TableWidget({ widget }: Props) {
       setSortDir("asc");
     }
   }
+  const getTicker = (row: any) =>
+    tickerField
+      .split(".")
+      .reduce((acc: any, k) => acc?.[k], row);
+
+  const getCompany = (row: any) =>
+    row.company ?? row.name ?? getTicker(row);
 
   const filteredData = data.filter((row) => {
     // Global search
-    const matchesSearch = widget.fields?.some((field) => {
-      const value = field
-        .split(".")
-        .reduce((acc: any, key) => acc?.[key], row);
+    const matchesSearch =
+      getCompany(row).toLowerCase().includes(search.toLowerCase()) ||
+      getTicker(row).toLowerCase().includes(search.toLowerCase()) ||
+      widget.fields?.some((field) => {
+        const value = field
+          .split(".")
+          .reduce((acc: any, key) => acc?.[key], row);
 
-      return String(value ?? "")
-        .toLowerCase()
-        .includes(search.toLowerCase());
-    });
+        return String(value ?? "")
+          .toLowerCase()
+          .includes(search.toLowerCase());
+      });
 
     if (!matchesSearch) return false;
 
@@ -190,103 +203,112 @@ export default function TableWidget({ widget }: Props) {
         />
       </div>
 
-      <div className="flex-1 overflow-x-auto">
-        <div className="min-w-max max-h-full overflow-y-auto">
-          <table className="min-w-max text-sm">
-            {/* Header */}
-            <thead className="sticky top-0 z-10 bg-card border-b border-border">
-              {/* Column titles */}
-              <tr>
+      <div className="flex-1 overflow-auto relative">
+        <table className="min-w-max text-sm border-collapse">
+          {/* Header */}
+          <thead className="sticky top-0 z-30 bg-card border-b border-border">
+            {/* Column titles */}
+            <tr>
+              {/* Company */}
+              <th className="sticky left-0 top-0 z-40 bg-card px-3 py-2">
+                Company
+              </th>
+
+              {/* Ticker */}
+              <th className="px-3 py-2 text-left text-xs font-medium uppercase">
+                Ticker
+              </th>
+
+              {/* Metrics */}
+              {widget.fields?.map((field) => {
+                const isActive = sortBy === field;
+                return (
+                  <th
+                    key={field}
+                    onClick={() => toggleSort(field)}
+                    className="px-3 py-2 text-left text-xs font-medium uppercase cursor-pointer"
+                  >
+                    {field.split(".").pop()}
+                    {isActive && (sortDir === "asc" ? " ↑" : " ↓")}
+                  </th>
+                );
+              })}
+            </tr>
+
+            {/* Column filters */}
+            <tr className="border-t border-border">
+              <th className="sticky left-0 top-0 z-30 bg-card px-2 py-1" />
+              <th className="px-2 py-1" />
+
+              {widget.fields?.map((field) => {
+                const sampleValue = field
+                  .split(".")
+                  .reduce((acc: any, key) => acc?.[key], data[0]);
+
+                const isNumber = typeof sampleValue === "number";
+
+                return (
+                  <th key={field} className="px-2 py-1">
+                    <input
+                      type={isNumber ? "number" : "text"}
+                      placeholder={isNumber ? "Min" : "Filter"}
+                      value={columnFilters[field] ?? ""}
+                      onChange={(e) =>
+                        setColumnFilters((prev) => ({
+                          ...prev,
+                          [field]: e.target.value,
+                        }))
+                      }
+                      className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
+                    />
+                  </th>
+                );
+              })}
+            </tr>
+
+          </thead>
+
+
+          {/* Body */}
+          <tbody>
+            {paginatedData.map((row, idx) => (
+              <tr
+                key={getTicker(row) ?? idx}
+                className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5"
+              >
+                {/* Company (sticky) */}
+                <td className="sticky left-0 z-20 bg-background px-3 py-2 max-w-[220px] truncate">
+                  {getCompany(row)}
+                </td>
+
+                {/* Ticker */}
+                <td className="px-3 py-2 font-mono">
+                  {getTicker(row)}
+                </td>
+
+                {/* Metrics */}
                 {widget.fields?.map((field) => {
-                  const isActive = sortBy === field;
+                  const value = field
+                    .split(".")
+                    .reduce((acc: any, key) => acc?.[key], row);
+
+                  const isNumber = typeof value === "number";
 
                   return (
-                    <th
+                    <td
                       key={field}
-                      onClick={() => toggleSort(field)}
-                      className="px-3 py-2 text-left font-medium uppercase text-xs tracking-wide
-                   cursor-pointer select-none hover:text-foreground"
+                      className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
+                        }`}
                     >
-                      <div className="flex items-center gap-1">
-                        <span>{field.split(".").pop()}</span>
-                        {isActive && (
-                          <span className="text-xs">
-                            {sortDir === "asc" ? "↑" : "↓"}
-                          </span>
-                        )}
-                      </div>
-                    </th>
+                      {value ?? "—"}
+                    </td>
                   );
                 })}
               </tr>
+            ))}
+          </tbody>
 
-
-              {/* Column filters */}
-              <tr className="border-t border-border">
-                {widget.fields?.map((field) => {
-                  const sampleValue = data[0]
-                    ?.split?.(".")
-                    ? null
-                    : field
-                      .split(".")
-                      .reduce((acc: any, key) => acc?.[key], data[0]);
-
-                  const isNumber = typeof sampleValue === "number";
-
-                  return (
-                    <th key={field} className="px-2 py-1">
-                      <input
-                        type={isNumber ? "number" : "text"}
-                        placeholder={isNumber ? "Min" : "Filter"}
-                        value={columnFilters[field] ?? ""}
-                        onChange={(e) =>
-                          setColumnFilters((prev) => ({
-                            ...prev,
-                            [field]: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
-                      />
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-
-
-            {/* Body */}
-            <tbody>
-              {paginatedData.map((row, idx) => (
-                <tr
-                  key={idx}
-                  className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5 transition"
-                >
-                  {widget.fields?.map((field) => {
-                    const value = field
-                      .split(".")
-                      .reduce((acc: any, key) => acc?.[key], row);
-
-                    const isNumber = typeof value === "number";
-
-                    return (
-                      <td
-                        key={field}
-                        className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
-                          }`}
-                      >
-                        {value !== undefined
-                          ? isNumber
-                            ? value.toLocaleString()
-                            : String(value)
-                          : "—"}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        </table>
         <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-card">
           <span className="text-xs text-muted">
             Page {page + 1} of {totalPages || 1}

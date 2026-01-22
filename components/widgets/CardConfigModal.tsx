@@ -174,7 +174,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
           )}
 
         {/* Financial / Performance fields config */}
-        {(variant === "financial" || variant === "performance") &&
+        {(variant === "financial") &&
           widget.availableFields && (
             <div className="space-y-2 mt-4">
               <label className="block text-sm font-medium">

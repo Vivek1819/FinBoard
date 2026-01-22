@@ -16,6 +16,13 @@ export default function CardWidget({ widget }: Props) {
 
     const fields = widget.fields ?? [];
 
+    const selectedTicker = widget.card?.primaryTicker;
+
+    const selectedMeta = widget.card?.availableTickers?.find(
+        (t) => t.ticker === selectedTicker
+    );
+
+
     async function fetchData() {
         if (!widget.api?.url) return;
 
@@ -236,13 +243,14 @@ export default function CardWidget({ widget }: Props) {
             <div className="flex flex-col justify-between h-full">
                 {/* Header */}
                 <div>
-                    <div className="text-sm font-medium">
-                        {stock.company ?? stock.ticker}
+                    <div className="text-sm font-medium truncate">
+                        {selectedMeta?.company ?? selectedTicker ?? "—"}
                     </div>
-                    <div className="text-xs text-muted">
-                        {stock.ticker}
+                    <div className="text-xs text-muted font-mono">
+                        {selectedTicker ?? "—"}
                     </div>
                 </div>
+
 
                 {/* Price */}
                 <div className="mt-4">
@@ -292,6 +300,17 @@ export default function CardWidget({ widget }: Props) {
 
     return (
         <div className="flex h-full flex-col justify-between">
+
+            {/* Header */}
+            <div className="mb-3">
+                <div className="text-sm font-medium truncate">
+                    {selectedMeta?.company ?? selectedTicker ?? "—"}
+                </div>
+                <div className="text-xs text-muted font-mono">
+                    {selectedTicker ?? "—"}
+                </div>
+            </div>
+
             {/* Primary metric */}
             <div>
                 <div className="text-xs uppercase tracking-wide text-muted">
