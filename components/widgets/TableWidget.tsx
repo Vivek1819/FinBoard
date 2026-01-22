@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
+import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 
 type Props = {
   widget: WidgetConfig;
@@ -135,7 +136,8 @@ export default function TableWidget({ widget }: Props) {
           ? json.data
           : [];
 
-      setData(rows);
+      const normalized = normalizeApiResponse(widget.api.url, json);
+      setData(normalized.rows);
       setPage(0);
     } catch (err: any) {
       if (err.message === "RATE_LIMIT") {
@@ -288,9 +290,10 @@ export default function TableWidget({ widget }: Props) {
 
                 {/* Metrics */}
                 {widget.fields?.map((field) => {
-                  const value = field
-                    .split(".")
-                    .reduce((acc: any, key) => acc?.[key], row);
+                  const value = row.raw
+                    ? field.split(".").reduce((acc: any, k) => acc?.[k], row.raw)
+                    : row[field];
+
 
                   const isNumber = typeof value === "number";
 

@@ -7,6 +7,7 @@ import { extractFields } from "@/lib/extractFields";
 import type { Field } from "@/lib/extractFields";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { WidgetType } from "@/types/widget";
+import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -15,7 +16,7 @@ type AddWidgetModalProps = {
 
 const API_PRESETS: Record<string, string> = {
     CoinGecko:
-        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd,inr",
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=inr&order=market_cap_desc&per_page=100&page=1&sparkline=false",
     "Alpha Vantage":
         "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=IBM&apikey=demo",
     Finnhub:
@@ -26,10 +27,9 @@ const API_PRESETS: Record<string, string> = {
 
 const PROVIDER_SUPPORT: Record<WidgetType, string[]> = {
     chart: ["Alpha Vantage"],
-    table: ["CoinGecko", "Finnhub", "Indian API"],
-    card: ["CoinGecko", "Finnhub", "Indian API"],
+    table: ["CoinGecko", "Indian API"],
+    card: ["CoinGecko", "Indian API", "Finnhub"],
 };
-
 
 export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     const addWidget = useDashboardStore((s) => s.addWidget);
@@ -105,25 +105,13 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     }
 
 
-    const tickerField = inferTickerField(fields);
+    const normalized =
+        testStatus === "success" && apiResponse
+            ? normalizeApiResponse(apiUrl, apiResponse)
+            : { rows: [], tickers: [] };
 
-    const allTickers =
-        tickerField && apiResponse
-            ? (Array.isArray(apiResponse) ? apiResponse : apiResponse.data ?? [])
-                .map((row: any) => {
-                    const ticker = tickerField
-                        .split(".")
-                        .reduce((acc: any, k) => acc?.[k], row);
+    const allTickers = normalized.tickers;
 
-                    return ticker
-                        ? {
-                            ticker,
-                            company: row.company ?? ticker,
-                        }
-                        : null;
-                })
-                .filter(Boolean) as { ticker: string; company: string }[]
-            : [];
 
     useEffect(() => {
         if (testStatus === "success" && apiResponse) {
@@ -194,7 +182,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                     card: {
                         variant: cardVariant,
-                        tickerField: tickerField ?? "ticker",
+                        tickerField: "ticker",
                         availableTickers: allTickers,
                         watchlistTickers:
                             cardVariant === "watchlist"
@@ -405,7 +393,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     {testStatus === "success" &&
                         fields.length > 0 &&
                         (type === "table" ||
-                            (type === "card" && cardVariant === "financial" )) && (
+                            (type === "card" && cardVariant === "financial")) && (
 
                             <div className="space-y-3">
                                 <label className="block text-sm font-medium">
@@ -446,11 +434,11 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 </label>
 
                                 <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                                    {allTickers.map(({ ticker, company }) => {
+                                    {allTickers.map(({ ticker, company }, index) => {
                                         const selected = watchlistTickers.includes(ticker);
 
                                         return (
-                                            <label key={ticker} className="flex items-center gap-2 text-sm">
+                                            <label key={`${ticker}-${index}`} className="flex items-center gap-2 text-sm">
                                                 <input
                                                     type="checkbox"
                                                     checked={selected}

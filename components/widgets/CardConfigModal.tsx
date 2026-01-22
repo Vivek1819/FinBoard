@@ -129,8 +129,8 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
                 className="w-full rounded-md px-3 py-2 bg-background border border-border"
               >
                 <option value="">Select ticker</option>
-                {widget.card.availableTickers.map(({ ticker, company }) => (
-                  <option key={ticker} value={ticker}>
+                {widget.card.availableTickers.map(({ ticker, company }, index) => (
+                  <option key={`${ticker}-${index}`} value={ticker}>
                     {company} ({ticker})
                   </option>
                 ))}

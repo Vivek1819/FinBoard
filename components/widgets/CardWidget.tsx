@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
+import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 
 type Props = {
     widget: WidgetConfig;
@@ -42,14 +43,8 @@ export default function CardWidget({ widget }: Props) {
 
             const json = await res.json();
 
-            if (Array.isArray(json)) {
-                setItems(json);
-            } else if (Array.isArray(json?.data)) {
-                setItems(json.data);
-                setItem(json.data[0] ?? null);
-            } else {
-                setItems([json]);
-            }
+            const normalized = normalizeApiResponse(widget.api.url, json);
+            setItems(normalized.rows);
 
         } catch (err: any) {
             if (err.message === "RATE_LIMIT") {
@@ -81,13 +76,9 @@ export default function CardWidget({ widget }: Props) {
             widget.card?.primaryTicker &&
             widget.card?.tickerField
         ) {
-            const match = items.find((row) => {
-                const t = widget.card!.tickerField!
-                    .split(".")
-                    .reduce((acc: any, k) => acc?.[k], row);
-                return t === widget.card!.primaryTicker;
-            });
-
+            const match = items.find(
+                (row) => row.ticker === widget.card!.primaryTicker
+            );
             setItem(match ?? null);
         } else {
             setItem(items[0] ?? null);
@@ -134,36 +125,36 @@ export default function CardWidget({ widget }: Props) {
             .slice(0, 5);
 
         return (
-            <div className="space-y-3">
-                {topGainers.map((stock: any) => (
-                    <div
-                        key={stock.ticker}
-                        className="flex items-center justify-between"
-                    >
-                        <div>
-                            <div className="text-sm font-medium">
-                                {stock.ticker}
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    {topGainers.map((stock: any) => (
+                        <div
+                            key={stock.ticker}
+                            className="flex items-center justify-between"
+                        >
+                            <div>
+                                <div className="text-sm font-medium">{stock.ticker}</div>
+                                <div className="text-xs text-muted truncate">
+                                    {stock.company}
+                                </div>
                             </div>
-                            <div className="text-xs text-muted truncate">
-                                {stock.company}
-                            </div>
-                        </div>
 
-                        <div className="text-right">
-                            <div className="text-sm font-medium tabular-nums">
-                                ₹{stock.price}
-                            </div>
-                            <div
-                                className={`text-xs font-medium ${stock.percent_change >= 0
-                                    ? "text-emerald-400"
-                                    : "text-red-400"
-                                    }`}
-                            >
-                                {stock.percent_change}%
+                            <div className="text-right">
+                                <div className="text-sm font-medium tabular-nums">
+                                    ₹{stock.price}
+                                </div>
+                                <div
+                                    className={`text-xs font-medium ${stock.percent_change >= 0
+                                        ? "text-emerald-400"
+                                        : "text-red-400"
+                                        }`}
+                                >
+                                    {stock.percent_change}%
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         );
     }
@@ -185,9 +176,7 @@ export default function CardWidget({ widget }: Props) {
 
 
         const filtered = rows.filter((stock: any) => {
-            const ticker = tickerField
-                .split(".")
-                .reduce((acc: any, k) => acc?.[k], stock);
+            const ticker = stock.ticker;
 
             return watchlist.includes(ticker);
         });
@@ -202,36 +191,36 @@ export default function CardWidget({ widget }: Props) {
         }
 
         return (
-            <div className="space-y-3">
-                {filtered.map((stock: any) => (
-                    <div
-                        key={stock.ticker}
-                        className="flex items-center justify-between"
-                    >
-                        <div>
-                            <div className="text-sm font-medium">
-                                {stock.ticker}
+            <div className="flex flex-col h-full">
+                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                    {filtered.map((stock: any) => (
+                        <div
+                            key={stock.ticker}
+                            className="flex items-center justify-between"
+                        >
+                            <div>
+                                <div className="text-sm font-medium">{stock.ticker}</div>
+                                <div className="text-xs text-muted truncate">
+                                    {stock.company}
+                                </div>
                             </div>
-                            <div className="text-xs text-muted truncate">
-                                {stock.company}
-                            </div>
-                        </div>
 
-                        <div className="text-right">
-                            <div className="text-sm font-medium tabular-nums">
-                                ₹{stock.price}
-                            </div>
-                            <div
-                                className={`text-xs font-medium ${stock.percent_change >= 0
-                                    ? "text-emerald-400"
-                                    : "text-red-400"
-                                    }`}
-                            >
-                                {stock.percent_change}%
+                            <div className="text-right">
+                                <div className="text-sm font-medium tabular-nums">
+                                    ₹{stock.price}
+                                </div>
+                                <div
+                                    className={`text-xs font-medium ${stock.percent_change >= 0
+                                            ? "text-emerald-400"
+                                            : "text-red-400"
+                                        }`}
+                                >
+                                    {stock.percent_change}%
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
         );
     }
@@ -269,6 +258,9 @@ export default function CardWidget({ widget }: Props) {
                 </div>
 
                 {/* Trend */}
+
+
+
                 {stock.overall_rating && (
                     <div className="mt-4 text-xs text-muted">
                         Trend:{" "}
@@ -293,14 +285,14 @@ export default function CardWidget({ widget }: Props) {
     const primaryField = fields[0];
     const source = item;
 
-    const primaryValue = primaryField
-        .split(".")
-        .reduce((acc: any, key) => acc?.[key], source);
+    const primaryValue = source.raw
+        ? primaryField.split(".").reduce((acc: any, k) => acc?.[k], source.raw)
+        : undefined;
+
 
 
     return (
-        <div className="flex h-full flex-col justify-between">
-
+        <div className="flex flex-col h-full justify-between">
             {/* Header */}
             <div className="mb-3">
                 <div className="text-sm font-medium truncate">
@@ -328,9 +320,10 @@ export default function CardWidget({ widget }: Props) {
             {/* Secondary metrics */}
             <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 {fields.slice(1, 5).map((field) => {
-                    const value = field
-                        .split(".")
-                        .reduce((acc: any, key) => acc?.[key], item);
+                    const value = item.raw
+                        ? field.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
+                        : undefined;
+
 
                     return (
                         <div key={field}>

@@ -45,5 +45,4 @@ export type WidgetConfig = {
   };
 };
 
-// ✅ REQUIRED FOR VERCEL / NEXT BUILD
 export {};
