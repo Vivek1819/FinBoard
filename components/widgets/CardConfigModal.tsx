@@ -279,7 +279,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
                   return (
                     <label
                       key={`${ticker}-${company}`}
-                      className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selected ? "bg-primary/5" : "hover:bg-muted/50"
+                      className={`relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selected ? "bg-primary/5" : "hover:bg-muted/50"
                         }`}
                     >
                       <div className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${selected

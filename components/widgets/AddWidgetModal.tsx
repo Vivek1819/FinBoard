@@ -269,7 +269,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     {/* Title */}
                     <div>
                         <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
-                            Widget Name
+                            Widget Title
                         </label>
                         <input
                             value={title}
@@ -315,7 +315,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     <button
                                         key={value}
                                         onClick={() => setCardVariant(value as any)}
-                                        className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${cardVariant === value
+                                        className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-center border ${cardVariant === value
                                             ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
                                             : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40"
                                             }`}
@@ -382,8 +382,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                         setSelectedFields([]);
                                     }}
                                     className={`w-full rounded-xl px-4 py-2.5 bg-muted/30 border focus:bg-background outline-none transition-all text-sm placeholder:text-muted-foreground/40 ${testStatus === "success" ? "border-emerald-500/50" :
-                                            testStatus === "error" ? "border-destructive/50" :
-                                                "border-border/50 focus:border-primary/50"
+                                        testStatus === "error" ? "border-destructive/50" :
+                                            "border-border/50 focus:border-primary/50"
                                         }`}
                                     placeholder="https://api.example.com/v1/data..."
                                 />
@@ -392,8 +392,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 onClick={testApi}
                                 disabled={!apiUrl || isTesting}
                                 className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${testStatus === "success"
-                                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
-                                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
+                                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                                    : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
                                     }`}
                             >
                                 {isTesting ? (
@@ -413,8 +413,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         )}
                         {testStatus === "error" && (
                             <div className={`mt-2.5 flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg w-full animate-in fade-in slide-in-from-top-1 ${errorMessage.toLowerCase().includes("rate limit")
-                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                                    : "bg-destructive/10 text-destructive"
+                                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                : "bg-destructive/10 text-destructive"
                                 }`}>
                                 {errorMessage.toLowerCase().includes("rate limit") ? (
                                     <>
@@ -436,7 +436,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             {/* Chart Type */}
                             <div>
                                 <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
-                                    Visualization Style
+                                    Chart Type
                                 </label>
                                 <div className="flex gap-2 p-1 bg-muted/30 rounded-xl border border-border/50">
                                     {["line", "candle"].map((v) => (
@@ -456,7 +456,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                             <div className="space-y-2">
                                 <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
-                                    Asset
+                                    Stock
                                 </label>
                                 <CustomSelect
                                     value={chartTicker}
@@ -466,7 +466,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                         label: s.company,
                                         sublabel: s.ticker
                                     }))}
-                                    placeholder="Select asset..."
+                                    placeholder="Select stock..."
                                 />
                             </div>
 
@@ -526,7 +526,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                         return (
                                             <label
                                                 key={`${ticker}-${index}`}
-                                                className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selected ? "bg-primary/5" : "hover:bg-muted/50"
+                                                className={`relative flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selected ? "bg-primary/5" : "hover:bg-muted/50"
                                                     }`}
                                             >
                                                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${selected ? "bg-primary border-primary" : "border-border bg-background"
