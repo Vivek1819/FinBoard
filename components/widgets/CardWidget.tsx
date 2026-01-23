@@ -16,6 +16,7 @@ export default function CardWidget({ widget }: Props) {
     const [items, setItems] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const variant = widget.card?.variant ?? "financial";
 
     const fields = widget.fields ?? [];
@@ -79,6 +80,7 @@ export default function CardWidget({ widget }: Props) {
             }
         } finally {
             setLoading(false);
+            setLastRefreshed(new Date());
         }
     }
 
@@ -120,8 +122,8 @@ export default function CardWidget({ widget }: Props) {
         const isPositive = value >= 0;
         return (
             <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2.5 py-1 rounded-full ${isPositive
-                    ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400"
-                    : "text-rose-700 bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400"
+                ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400"
+                : "text-rose-700 bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400"
                 }`}>
                 {isPositive ? <ArrowUpRight size={12} strokeWidth={2.5} /> : <ArrowDownRight size={12} strokeWidth={2.5} />}
                 {value > 0 ? "+" : ""}{value}%
@@ -131,7 +133,7 @@ export default function CardWidget({ widget }: Props) {
 
     if ((variant === "performance" || variant === "financial") && !hasData) {
         return (
-            <WidgetState loading={loading} error={error} empty>
+            <WidgetState loading={loading} error={error} empty lastUpdated={lastRefreshed}>
                 <div className="h-full flex items-center justify-center">
                     <div className="w-6 h-6 rounded-full border-2 border-muted-foreground/20 border-t-primary animate-spin" />
                 </div>
@@ -159,7 +161,7 @@ export default function CardWidget({ widget }: Props) {
         }
 
         return (
-            <WidgetState loading={loading} error={error} empty={!items.length}>
+            <WidgetState loading={loading} error={error} empty={!items.length} lastUpdated={lastRefreshed}>
                 <div className="flex flex-col h-full gap-2 overflow-y-auto custom-scrollbar -mx-1 px-1">
                     {rows.map((stock: any, idx) => {
                         const isPositive = (stock.percent_change ?? 0) >= 0;
@@ -173,8 +175,8 @@ export default function CardWidget({ widget }: Props) {
                                 <div className="flex items-center gap-3 min-w-0">
                                     {/* Trend indicator circle */}
                                     <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${isPositive
-                                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
-                                            : "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400"
+                                        ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+                                        : "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400"
                                         }`}>
                                         {isPositive ? <TrendingUp size={14} strokeWidth={2} /> : <TrendingDown size={14} strokeWidth={2} />}
                                     </div>
@@ -217,7 +219,7 @@ export default function CardWidget({ widget }: Props) {
         const isPositive = stock.percent_change >= 0;
 
         return (
-            <WidgetState loading={loading} error={error} empty={false}>
+            <WidgetState loading={loading} error={error} empty={false} lastUpdated={lastRefreshed}>
                 <div className="flex flex-col h-full items-center justify-center text-center relative p-2">
                     {/* Ambient glow */}
                     <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-[50px] opacity-[0.12] pointer-events-none ${isPositive ? "bg-emerald-500" : "bg-rose-500"
@@ -266,7 +268,7 @@ export default function CardWidget({ widget }: Props) {
         const primaryLabel = primaryField.split(".").pop()?.replace(/_/g, " ");
 
         return (
-            <WidgetState loading={loading} error={error} empty={!item}>
+            <WidgetState loading={loading} error={error} empty={!item} lastUpdated={lastRefreshed}>
                 <div className="flex flex-col h-full items-center justify-center text-center p-2">
                     {/* Stock Name */}
                     <h2 className="text-xl font-bold text-foreground tracking-tight leading-tight">

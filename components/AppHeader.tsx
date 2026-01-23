@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Plus } from "lucide-react";
+import { ChartNoAxesCombined, Plus } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useState } from "react";
@@ -16,9 +16,9 @@ export default function AppHeader() {
             <div className="flex h-16 items-center justify-between px-6 max-w-[1920px] mx-auto">
                 {/* Brand */}
                 <div className="flex items-center gap-3 select-none">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary ring-1 ring-primary/20 shadow-sm">
-                        <LayoutDashboard size={18} strokeWidth={2.5} />
-                    </div>
+
+                    <ChartNoAxesCombined size={26} strokeWidth={2.5} />
+
                     <div className="flex flex-col justify-center">
                         <h1 className="text-lg font-bold tracking-tight text-foreground leading-none">
                             FinBoard
@@ -26,7 +26,7 @@ export default function AppHeader() {
                         <div className="flex items-center gap-1.5 mt-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-none">
-                                Live Dashboard
+                                Financial Dashboard
                             </p>
                         </div>
                     </div>

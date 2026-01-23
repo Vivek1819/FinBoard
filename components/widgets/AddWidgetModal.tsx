@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, Zap } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { extractFields } from "@/lib/extractFields";
@@ -385,9 +385,21 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             </div>
                         )}
                         {testStatus === "error" && (
-                            <div className="mt-2 text-xs font-medium text-destructive flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                                {errorMessage}
+                            <div className={`mt-2 text-xs font-medium flex items-center gap-1.5 ${errorMessage.toLowerCase().includes("rate limit") || errorMessage.includes("429")
+                                    ? "text-amber-500"
+                                    : "text-destructive"
+                                }`}>
+                                {errorMessage.toLowerCase().includes("rate limit") || errorMessage.includes("429") ? (
+                                    <>
+                                        <Zap size={12} />
+                                        <span>API rate limit reached. Please wait and try again.</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                                        {errorMessage}
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>

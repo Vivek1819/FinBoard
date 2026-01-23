@@ -122,6 +122,7 @@ export default function ChartWidget({ widget }: Props) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
   async function fetchData() {
     try {
@@ -150,6 +151,7 @@ export default function ChartWidget({ widget }: Props) {
       }
     } finally {
       setLoading(false);
+      setLastRefreshed(new Date());
     }
   }
 
@@ -170,6 +172,7 @@ export default function ChartWidget({ widget }: Props) {
         loading={loading}
         error={error}
         empty={!data || data.length === 0}
+        lastUpdated={lastRefreshed}
       >
         <div className="h-full w-full flex flex-col">
           {/* Stats Header */}
@@ -255,6 +258,7 @@ export default function ChartWidget({ widget }: Props) {
       loading={loading}
       error={error}
       empty={!data || data.length === 0}
+      lastUpdated={lastRefreshed}
     >
       <div className="h-full w-full flex flex-col">
         {/* Stats Header */}

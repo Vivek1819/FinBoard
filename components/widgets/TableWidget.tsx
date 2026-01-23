@@ -15,6 +15,7 @@ export default function TableWidget({ widget }: Props) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const PAGE_SIZE = 10;
   const [search, setSearch] = useState("");
   const [columnFilters, setColumnFilters] = useState<
@@ -137,6 +138,7 @@ export default function TableWidget({ widget }: Props) {
       }
     } finally {
       setLoading(false);
+      setLastRefreshed(new Date());
     }
   }
 
@@ -165,6 +167,7 @@ export default function TableWidget({ widget }: Props) {
       loading={loading}
       error={error}
       empty={!data || data.length === 0}
+      lastUpdated={lastRefreshed}
     >
       <div className="relative h-full flex flex-col overflow-hidden">
         {/* Search Bar */}
@@ -290,8 +293,8 @@ export default function TableWidget({ widget }: Props) {
                     key={pageNum}
                     onClick={() => setPage(pageNum)}
                     className={`w-7 h-7 rounded-md text-xs font-medium transition-colors ${page === pageNum
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       }`}
                   >
                     {pageNum + 1}
