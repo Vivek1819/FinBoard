@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { normalizeAlphaVantage } from "@/lib/adapters/alphaVantage";
 import WidgetState from "./WidgetState";
+import { cachedFetch } from "@/lib/apiCache";
 
 type Props = {
   widget: WidgetConfig;
@@ -85,30 +86,24 @@ export default function ChartWidget({ widget }: Props) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(api.url);
+      const ttlMs =
+        (widget.api?.refreshInterval ?? 60) * 1000;
 
-      if (res.status === 429) {
-        throw new Error("RATE_LIMIT");
-      }
+      // ✅ cached fetch
+      const raw = await cachedFetch(api.url, ttlMs);
 
-      if (!res.ok) {
-        throw new Error(`HTTP_${res.status}`);
-      }
-
-      const raw = await res.json();
       const normalized = normalizeAlphaVantage(raw, interval);
 
       const windowed =
         interval === "daily"
-          ? normalized.slice(-120)   // ~6 months
+          ? normalized.slice(-120)
           : interval === "weekly"
-            ? normalized.slice(-104)   // ~2 years
-            : normalized.slice(-120);  // monthly
+            ? normalized.slice(-104)
+            : normalized.slice(-120);
 
       setData(windowed);
-
     } catch (err: any) {
-      if (err.message === "RATE_LIMIT") {
+      if (err.message === "HTTP_429" || err.message === "RATE_LIMIT") {
         setError("Rate limit reached. Try again later.");
       } else {
         setError("Failed to load chart data.");

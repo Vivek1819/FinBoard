@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
+import { cachedFetch } from "@/lib/apiCache";
 
 type Props = {
   widget: WidgetConfig;
@@ -122,29 +123,16 @@ export default function TableWidget({ widget }: Props) {
       setLoading(true);
       setError(null);
 
-      const res = await fetch(widget.api.url);
-
-      if (res.status === 429) {
-        throw new Error("RATE_LIMIT");
-      }
-
-      if (!res.ok) {
-        throw new Error(`HTTP_${res.status}`);
-      }
-
-      const json = await res.json();
-
-      const rows = Array.isArray(json)
-        ? json
-        : Array.isArray(json.data)
-          ? json.data
-          : [];
+      const json = await cachedFetch(
+        widget.api.url,
+        (widget.api?.refreshInterval ?? 30) * 1000
+      );
 
       const normalized = normalizeApiResponse(widget.api.url, json);
       setData(normalized.rows);
       setPage(0);
     } catch (err: any) {
-      if (err.message === "RATE_LIMIT") {
+      if (err.message === "HTTP_429") {
         setError("Rate limit reached. Retrying shortly.");
       } else {
         setError("Failed to load data.");

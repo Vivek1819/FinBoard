@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
+import { cachedFetch } from "@/lib/apiCache";
 
 type Props = {
     widget: WidgetConfig;
@@ -25,7 +26,6 @@ export default function CardWidget({ widget }: Props) {
         (t) => t.ticker === selectedTicker
     );
 
-
     async function fetchData() {
         if (!widget.api?.url) return;
 
@@ -37,39 +37,38 @@ export default function CardWidget({ widget }: Props) {
             const watchlist = widget.card?.watchlistTickers ?? [];
 
             if (variant === "watchlist" && isFinnhub && watchlist.length > 0) {
-                // 🔁 fan-out: one request per ticker
+                const ttlMs = (widget.api?.refreshInterval ?? 30) * 1000;
+
                 const results = await Promise.all(
                     watchlist.map(async (ticker) => {
-                        const res = await fetch(`/api/finnhub/quote?symbol=${ticker}`);
-                        if (!res.ok) return null;
+                        try {
+                            const raw = await cachedFetch(
+                                `/api/finnhub/quote?symbol=${ticker}`,
+                                ttlMs
+                            );
 
-                        const json = await res.json();
-                        const normalized = normalizeApiResponse(
-                            `/api/finnhub/quote?symbol=${ticker}`,
-                            json
-                        );
+                            const normalized = normalizeApiResponse(
+                                `/api/finnhub/quote?symbol=${ticker}`,
+                                raw
+                            );
 
-                        return normalized.rows[0] ?? null;
+                            return normalized.rows[0] ?? null;
+                        } catch {
+                            return null;
+                        }
                     })
                 );
 
                 setItems(results.filter(Boolean));
                 return;
             }
-            const res = await fetch(widget.api.url);
+            const ttlMs = (widget.api?.refreshInterval ?? 30) * 1000;
 
-            if (res.status === 429) {
-                throw new Error("RATE_LIMIT");
-            }
+            const raw = await cachedFetch(widget.api.url, ttlMs);
 
-            if (!res.ok) {
-                throw new Error(`HTTP_${res.status}`);
-            }
-
-            const json = await res.json();
-
-            const normalized = normalizeApiResponse(widget.api.url, json);
+            const normalized = normalizeApiResponse(widget.api.url, raw);
             setItems(normalized.rows);
+
 
         } catch (err: any) {
             if (err.message === "RATE_LIMIT") {
@@ -205,9 +204,9 @@ export default function CardWidget({ widget }: Props) {
             >
                 <div className="flex flex-col h-full">
                     <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                        {filtered.map((stock: any) => (
+                        {filtered.map((stock: any, idx) => (
                             <div
-                                key={stock.ticker}
+                                key={`${stock.ticker}-${idx}`}
                                 className="flex items-center justify-between"
                             >
                                 <div>
