@@ -14,7 +14,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
-
 export default function Home() {
   const widgets = useDashboardStore((s) => s.widgets);
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
@@ -54,7 +53,6 @@ export default function Home() {
               </div>
             </SortableContext>
           </DndContext>
-
         )}
       </div>
     </main>

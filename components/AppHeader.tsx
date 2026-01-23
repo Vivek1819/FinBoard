@@ -4,6 +4,7 @@ import ThemeToggle from "./ThemeToggle";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { useState } from "react";
 import AddWidgetModal from "@/components/widgets/AddWidgetModal";
+import DashboardActions from "@/components/dashboard/DashboardActions";
 
 export default function AppHeader() {
     const addWidget = useDashboardStore((s) => s.addWidget);
@@ -21,6 +22,7 @@ export default function AppHeader() {
             </div>
 
             <div className="flex items-center gap-3">
+                <DashboardActions />
                 <button
                     onClick={() => setOpen(true)}
                     className="px-4 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-500 transition"

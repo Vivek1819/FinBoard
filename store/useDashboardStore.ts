@@ -11,12 +11,20 @@ type DashboardState = {
   clearWidgets: () => void;
   updateWidget: (id: string, updater: (w: WidgetConfig) => WidgetConfig) => void;
   reorderWidgets: (oldIndex: number, newIndex: number) => void;
+
+  replaceWidgets: (widgets: WidgetConfig[]) => void;
 };
+
 
 export const useDashboardStore = create<DashboardState>()(
   persist(
     (set) => ({
       widgets: [],
+      
+      replaceWidgets: (widgets) =>
+        set(() => ({
+          widgets,
+        })),
 
       addWidget: (widget) =>
         set((state) => ({
