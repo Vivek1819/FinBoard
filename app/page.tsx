@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import AppHeader from "@/components/AppHeader";
 import WidgetShell from "@/components/widgets/WidgetShell";
+import AddWidgetPlaceholder from "@/components/widgets/AddWidgetPlaceholder";
+import AddWidgetModal from "@/components/widgets/AddWidgetModal";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   DndContext,
@@ -10,13 +13,13 @@ import {
 } from "@dnd-kit/core";
 import {
   SortableContext,
-  rectSortingStrategy,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 
 export default function Home() {
   const widgets = useDashboardStore((s) => s.widgets);
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
+  const [modalOpen, setModalOpen] = useState(false);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -28,15 +31,15 @@ export default function Home() {
     reorderWidgets(oldIndex, newIndex);
   }
 
-
   return (
     <main className="min-h-screen bg-background/50">
-      <AppHeader />
+      <AppHeader onAddClick={() => setModalOpen(true)} />
+
+      <AddWidgetModal open={modalOpen} onClose={() => setModalOpen(false)} />
 
       <div className="max-w-[1600px] mx-auto p-6 md:p-8">
         {widgets.length === 0 ? (
-          /* existing empty state stays */
-          <></>
+          <AddWidgetPlaceholder variant="large" onClick={() => setModalOpen(true)} />
         ) : (
           <DndContext
             collisionDetection={closestCenter}
@@ -50,6 +53,9 @@ export default function Home() {
                 {widgets.map((widget) => (
                   <WidgetShell key={widget.id} widget={widget} />
                 ))}
+
+                {/* Always show add button at the end */}
+                <AddWidgetPlaceholder onClick={() => setModalOpen(true)} />
               </div>
             </SortableContext>
           </DndContext>
