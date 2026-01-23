@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
+import WidgetState from "./WidgetState";
 
 type Props = {
     widget: WidgetConfig;
@@ -18,6 +19,7 @@ export default function CardWidget({ widget }: Props) {
     const fields = widget.fields ?? [];
 
     const selectedTicker = widget.card?.primaryTicker;
+    const hasData = !loading && !error && item;
 
     const selectedMeta = widget.card?.availableTickers?.find(
         (t) => t.ticker === selectedTicker
@@ -89,7 +91,7 @@ export default function CardWidget({ widget }: Props) {
         );
 
         return () => clearInterval(interval);
-    }, [widget.api?.url, widget.api?.refreshInterval]);
+    }, [widget.api?.url, widget.api?.refreshInterval, variant]);
 
     useEffect(() => {
         if (!items.length) return;
@@ -113,32 +115,17 @@ export default function CardWidget({ widget }: Props) {
         widget.card?.tickerField,
     ]);
 
-
-
-    if (loading) {
+    if ((variant === "performance" || variant === "financial") && !hasData) {
         return (
-            <div className="h-32 flex items-center justify-center text-sm text-muted">
-                Loading…
-            </div>
+            <WidgetState
+                loading={loading}
+                error={error}
+                empty
+            >
+                <div />
+            </WidgetState>
         );
     }
-
-    if (error) {
-        return (
-            <div className="h-32 flex items-center justify-center text-sm text-yellow-400">
-                {error}
-            </div>
-        );
-    }
-
-    if (!item) {
-        return (
-            <div className="h-32 flex items-center justify-center text-sm text-muted">
-                No data available
-            </div>
-        );
-    }
-
 
     if (variant === "gainers") {
         const rows = items;
@@ -148,37 +135,43 @@ export default function CardWidget({ widget }: Props) {
             .slice(0, 5);
 
         return (
-            <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                    {topGainers.map((stock: any) => (
-                        <div
-                            key={stock.ticker}
-                            className="flex items-center justify-between"
-                        >
-                            <div>
-                                <div className="text-sm font-medium">{stock.ticker}</div>
-                                <div className="text-xs text-muted truncate">
-                                    {stock.company}
+            <WidgetState
+                loading={loading}
+                error={error}
+                empty={!items.length}
+            >
+                <div className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                        {topGainers.map((stock: any) => (
+                            <div
+                                key={stock.ticker}
+                                className="flex items-center justify-between"
+                            >
+                                <div>
+                                    <div className="text-sm font-medium">{stock.ticker}</div>
+                                    <div className="text-xs text-muted truncate">
+                                        {stock.company}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="text-right">
-                                <div className="text-sm font-medium tabular-nums">
-                                    ₹{stock.price}
-                                </div>
-                                <div
-                                    className={`text-xs font-medium ${stock.percent_change >= 0
-                                        ? "text-emerald-400"
-                                        : "text-red-400"
-                                        }`}
-                                >
-                                    {stock.percent_change}%
+                                <div className="text-right">
+                                    <div className="text-sm font-medium tabular-nums">
+                                        ₹{stock.price}
+                                    </div>
+                                    <div
+                                        className={`text-xs font-medium ${stock.percent_change >= 0
+                                            ? "text-emerald-400"
+                                            : "text-red-400"
+                                            }`}
+                                    >
+                                        {stock.percent_change}%
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </WidgetState>
         );
     }
 
@@ -204,57 +197,139 @@ export default function CardWidget({ widget }: Props) {
             return watchlist.includes(ticker);
         });
 
-
-        if (!filtered.length) {
-            return (
-                <div className="h-32 flex items-center justify-center text-sm text-muted">
-                    No watchlist items
-                </div>
-            );
-        }
-
         return (
-            <div className="flex flex-col h-full">
-                <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                    {filtered.map((stock: any) => (
-                        <div
-                            key={stock.ticker}
-                            className="flex items-center justify-between"
-                        >
-                            <div>
-                                <div className="text-sm font-medium">{stock.ticker}</div>
-                                <div className="text-xs text-muted truncate">
-                                    {stock.company}
+            <WidgetState
+                loading={loading}
+                error={error}
+                empty={!items.length}
+            >
+                <div className="flex flex-col h-full">
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                        {filtered.map((stock: any) => (
+                            <div
+                                key={stock.ticker}
+                                className="flex items-center justify-between"
+                            >
+                                <div>
+                                    <div className="text-sm font-medium">{stock.ticker}</div>
+                                    <div className="text-xs text-muted truncate">
+                                        {stock.company}
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="text-right">
-                                <div className="text-sm font-medium tabular-nums">
-                                    ₹{stock.price}
-                                </div>
-                                <div
-                                    className={`text-xs font-medium ${stock.percent_change >= 0
-                                        ? "text-emerald-400"
-                                        : "text-red-400"
-                                        }`}
-                                >
-                                    {stock.percent_change}%
+                                <div className="text-right">
+                                    <div className="text-sm font-medium tabular-nums">
+                                        ₹{stock.price}
+                                    </div>
+                                    <div
+                                        className={`text-xs font-medium ${stock.percent_change >= 0
+                                            ? "text-emerald-400"
+                                            : "text-red-400"
+                                            }`}
+                                    >
+                                        {stock.percent_change}%
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            </div>
+            </WidgetState>
         );
     }
 
     if (variant === "performance") {
+        if (!item) {
+            return (
+                <WidgetState
+                    loading={loading}
+                    error={error}
+                    empty
+                >
+                    <div />
+                </WidgetState>
+            );
+        }
+
         const stock = item;
 
         return (
-            <div className="flex flex-col justify-between h-full">
+            <WidgetState
+                loading={loading}
+                error={error}
+                empty={false}
+            >
+                <div className="flex flex-col justify-between h-full">
+                    {/* Header */}
+                    <div>
+                        <div className="text-sm font-medium truncate">
+                            {selectedMeta?.company ?? selectedTicker ?? "—"}
+                        </div>
+                        <div className="text-xs text-muted font-mono">
+                            {selectedTicker ?? "—"}
+                        </div>
+                    </div>
+
+                    {/* Price */}
+                    <div className="mt-4">
+                        <div className="text-4xl font-semibold tabular-nums">
+                            ₹{stock.price}
+                        </div>
+
+                        <div
+                            className={`mt-1 text-sm font-medium ${stock.percent_change >= 0
+                                ? "text-emerald-400"
+                                : "text-red-400"
+                                }`}
+                        >
+                            {stock.percent_change}% ({stock.net_change})
+                        </div>
+                    </div>
+
+                    {stock.overall_rating && (
+                        <div className="mt-4 text-xs text-muted">
+                            Trend:{" "}
+                            <span className="font-medium">
+                                {stock.overall_rating}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            </WidgetState>
+        );
+    }
+
+
+    if (variant === "financial" && fields.length === 0) {
+        return (
+            <WidgetState loading={false} error={null} empty>
+                <div />
+            </WidgetState>
+        );
+    }
+
+
+
+    const primaryField = fields[0];
+    const source = item?.raw;
+
+    const primaryValue =
+        source && primaryField
+            ? primaryField.split(".").reduce((acc: any, k) => acc?.[k], source)
+            : undefined;
+
+
+
+
+    return (
+        <WidgetState
+            loading={loading}
+            error={error}
+            empty={!item}
+        >
+            <div className="flex flex-col h-full justify-between">
                 {/* Header */}
-                <div>
+                <div className="mb-3">
                     <div className="text-sm font-medium truncate">
                         {selectedMeta?.company ?? selectedTicker ?? "—"}
                     </div>
@@ -263,104 +338,42 @@ export default function CardWidget({ widget }: Props) {
                     </div>
                 </div>
 
-
-                {/* Price */}
-                <div className="mt-4">
-                    <div className="text-4xl font-semibold tabular-nums">
-                        ₹{stock.price}
+                {/* Primary metric */}
+                <div>
+                    <div className="text-xs uppercase tracking-wide text-muted">
+                        {primaryField.split(".").pop()}
                     </div>
 
-                    <div
-                        className={`mt-1 text-sm font-medium ${stock.percent_change >= 0
-                            ? "text-emerald-400"
-                            : "text-red-400"
-                            }`}
-                    >
-                        {stock.percent_change}% ({stock.net_change})
+                    <div className="mt-1 text-4xl font-semibold tracking-tight tabular-nums">
+                        {primaryValue !== undefined ? primaryValue : "—"}
                     </div>
                 </div>
 
-                {/* Trend */}
+                {/* Divider */}
+                <div className="my-4 h-px bg-white/10" />
+
+                {/* Secondary metrics */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                    {fields.slice(1, 5).map((field) => {
+                        const value = item.raw
+                            ? field.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
+                            : undefined;
 
 
-
-                {stock.overall_rating && (
-                    <div className="mt-4 text-xs text-muted">
-                        Trend:{" "}
-                        <span className="font-medium">
-                            {stock.overall_rating}
-                        </span>
-                    </div>
-                )}
-            </div>
-        );
-    }
-
-    if (variant === "financial" && fields.length === 0) {
-        return (
-            <div className="h-32 flex items-center justify-center text-sm text-muted">
-                No fields configured
-            </div>
-        );
-    }
-
-
-    const primaryField = fields[0];
-    const source = item;
-
-    const primaryValue = source.raw
-        ? primaryField.split(".").reduce((acc: any, k) => acc?.[k], source.raw)
-        : undefined;
-
-
-
-    return (
-        <div className="flex flex-col h-full justify-between">
-            {/* Header */}
-            <div className="mb-3">
-                <div className="text-sm font-medium truncate">
-                    {selectedMeta?.company ?? selectedTicker ?? "—"}
-                </div>
-                <div className="text-xs text-muted font-mono">
-                    {selectedTicker ?? "—"}
-                </div>
-            </div>
-
-            {/* Primary metric */}
-            <div>
-                <div className="text-xs uppercase tracking-wide text-muted">
-                    {primaryField.split(".").pop()}
-                </div>
-
-                <div className="mt-1 text-4xl font-semibold tracking-tight tabular-nums">
-                    {primaryValue !== undefined ? primaryValue : "—"}
-                </div>
-            </div>
-
-            {/* Divider */}
-            <div className="my-4 h-px bg-white/10" />
-
-            {/* Secondary metrics */}
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                {fields.slice(1, 5).map((field) => {
-                    const value = item.raw
-                        ? field.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
-                        : undefined;
-
-
-                    return (
-                        <div key={field}>
-                            <div className="text-xs text-muted">
-                                {field.split(".").pop()}
+                        return (
+                            <div key={field}>
+                                <div className="text-xs text-muted">
+                                    {field.split(".").pop()}
+                                </div>
+                                <div className="font-medium tabular-nums">
+                                    {value !== undefined ? value : "—"}
+                                </div>
                             </div>
-                            <div className="font-medium tabular-nums">
-                                {value !== undefined ? value : "—"}
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
+                </div>
             </div>
-        </div>
+        </WidgetState>
     );
 
 

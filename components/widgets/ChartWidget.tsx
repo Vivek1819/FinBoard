@@ -13,7 +13,7 @@ import {
   Bar,
 } from "recharts";
 import { normalizeAlphaVantage } from "@/lib/adapters/alphaVantage";
-
+import WidgetState from "./WidgetState";
 
 type Props = {
   widget: WidgetConfig;
@@ -122,37 +122,61 @@ export default function ChartWidget({ widget }: Props) {
     fetchData();
   }, [interval]);
 
-
-  if (loading) {
-    return (
-      <div className="h-56 flex items-center justify-center text-sm text-muted">
-        Loading chart…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-56 flex items-center justify-center text-sm text-yellow-400">
-        {error}
-      </div>
-    );
-  }
-
-  if (!data.length) {
-    return (
-      <div className="h-56 flex items-center justify-center text-sm text-muted">
-        No chart data available
-      </div>
-    );
-  }
-
-  /* ---------- LINE CHART (CLOSE PRICE) ---------- */
   if (variant === "line") {
     return (
+      <WidgetState
+        loading={loading}
+        error={error}
+        empty={!data || data.length === 0}
+      >
+        <div className="h-56 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <XAxis
+                dataKey="time"
+                tick={{ fontSize: 11 }}
+                stroke="rgb(var(--muted))"
+              />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                stroke="rgb(var(--muted))"
+                domain={[
+                  (min: number) => min * 0.98,
+                  (max: number) => max * 1.02,
+                ]}
+              />
+
+              <Tooltip
+                contentStyle={{
+                  background: "rgb(var(--card))",
+                  border: "1px solid rgb(var(--border))",
+                  fontSize: "12px",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="close"
+                stroke="rgb(var(--accent))"
+                strokeWidth={2}
+                dot={false}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </WidgetState>
+    );
+  }
+
+  /* ---------- CANDLE CHART ---------- */
+  return (
+    <WidgetState
+      loading={loading}
+      error={error}
+      empty={!data || data.length === 0}
+    >
       <div className="h-56 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data}>
+          <ComposedChart data={data}>
             <XAxis
               dataKey="time"
               tick={{ fontSize: 11 }}
@@ -166,64 +190,25 @@ export default function ChartWidget({ widget }: Props) {
                 (max: number) => max * 1.02,
               ]}
             />
-
             <Tooltip
               contentStyle={{
                 background: "rgb(var(--card))",
                 border: "1px solid rgb(var(--border))",
                 fontSize: "12px",
               }}
+              formatter={(value: any, name?: string | number) => [
+                value,
+                typeof name === "string" ? name.toUpperCase() : name,
+              ]}
             />
-            <Line
-              type="monotone"
+            <Bar
               dataKey="close"
-              stroke="rgb(var(--accent))"
-              strokeWidth={2}
-              dot={false}
+              shape={<CandleShape />}
+              isAnimationActive={false}
             />
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
-    );
-  }
-
-  /* ---------- CANDLE CHART ---------- */
-  return (
-    <div className="h-56 w-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data}>
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 11 }}
-            stroke="rgb(var(--muted))"
-          />
-          <YAxis
-            tick={{ fontSize: 11 }}
-            stroke="rgb(var(--muted))"
-            domain={[
-              (min: number) => min * 0.98,
-              (max: number) => max * 1.02,
-            ]}
-          />
-          <Tooltip
-            contentStyle={{
-              background: "rgb(var(--card))",
-              border: "1px solid rgb(var(--border))",
-              fontSize: "12px",
-            }}
-            formatter={(value: any, name?: string | number) => [
-              value,
-              typeof name === "string" ? name.toUpperCase() : name,
-            ]}
-          />
-          <Bar
-            dataKey="close"
-            shape={<CandleShape />}
-            isAnimationActive={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
+    </WidgetState>
   );
-
 }

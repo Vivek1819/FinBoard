@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
+import WidgetState from "./WidgetState";
 
 type Props = {
   widget: WidgetConfig;
@@ -173,172 +174,154 @@ export default function TableWidget({ widget }: Props) {
   }, [sortBy, sortDir]);
 
 
-  if (loading) {
-    return (
-      <div className="h-32 flex items-center justify-center text-sm text-muted">
-        Loading data…
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-32 flex items-center justify-center text-sm text-yellow-400">
-        {error}
-      </div>
-    );
-  }
-
-  if (!data.length) {
-    return (
-      <div className="h-32 flex items-center justify-center text-sm text-muted">
-        No data available
-      </div>
-    );
-  }
-
   return (
-    <div className="relative h-full rounded-lg border border-border flex flex-col">
-      <div className="px-3 py-2 border-b border-border bg-card">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search…"
-          className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
-        />
-      </div>
+    <WidgetState
+      loading={loading}
+      error={error}
+      empty={!data || data.length === 0}
+    >
+      <div className="relative h-full rounded-lg border border-border flex flex-col">
+        <div className="px-3 py-2 border-b border-border bg-card">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search…"
+            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
+          />
+        </div>
 
-      <div className="flex-1 overflow-auto relative">
-        <table className="min-w-max text-sm border-collapse">
-          {/* Header */}
-          <thead className="sticky top-0 z-30 bg-card border-b border-border">
-            {/* Column titles */}
-            <tr>
-              {/* Company */}
-              <th className="sticky left-0 top-0 z-40 bg-card px-3 py-2">
-                Company
-              </th>
-
-              {/* Ticker */}
-              <th className="px-3 py-2 text-left text-xs font-medium uppercase">
-                Ticker
-              </th>
-
-              {/* Metrics */}
-              {widget.fields?.map((field) => {
-                const isActive = sortBy === field;
-                return (
-                  <th
-                    key={field}
-                    onClick={() => toggleSort(field)}
-                    className="px-3 py-2 text-left text-xs font-medium uppercase cursor-pointer"
-                  >
-                    {field.split(".").pop()}
-                    {isActive && (sortDir === "asc" ? " ↑" : " ↓")}
-                  </th>
-                );
-              })}
-            </tr>
-
-            {/* Column filters */}
-            <tr className="border-t border-border">
-              <th className="sticky left-0 top-0 z-30 bg-card px-2 py-1" />
-              <th className="px-2 py-1" />
-
-              {widget.fields?.map((field) => {
-                const sampleValue = field
-                  .split(".")
-                  .reduce((acc: any, key) => acc?.[key], data[0]?.raw);
-
-                const isNumber = typeof sampleValue === "number";
-
-                return (
-                  <th key={field} className="px-2 py-1">
-                    <input
-                      type={isNumber ? "number" : "text"}
-                      placeholder={isNumber ? "Min" : "Filter"}
-                      value={columnFilters[field] ?? ""}
-                      onChange={(e) =>
-                        setColumnFilters((prev) => ({
-                          ...prev,
-                          [field]: e.target.value,
-                        }))
-                      }
-                      className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
-                    />
-                  </th>
-                );
-              })}
-            </tr>
-
-          </thead>
-
-
-          {/* Body */}
-          <tbody>
-            {paginatedData.map((row, idx) => (
-              <tr
-                key={getTicker(row) ?? idx}
-                className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5"
-              >
-                {/* Company (sticky) */}
-                <td className="sticky left-0 z-20 bg-background px-3 py-2 max-w-[220px] truncate">
-                  {getCompany(row)}
-                </td>
+        <div className="flex-1 overflow-auto relative">
+          <table className="min-w-max text-sm border-collapse">
+            {/* Header */}
+            <thead className="sticky top-0 z-30 bg-card border-b border-border">
+              {/* Column titles */}
+              <tr>
+                {/* Company */}
+                <th className="sticky left-0 top-0 z-40 bg-card px-3 py-2">
+                  Company
+                </th>
 
                 {/* Ticker */}
-                <td className="px-3 py-2 font-mono">
-                  {getTicker(row)}
-                </td>
+                <th className="px-3 py-2 text-left text-xs font-medium uppercase">
+                  Ticker
+                </th>
 
                 {/* Metrics */}
                 {widget.fields?.map((field) => {
-                  const value = getValue(row, field);
-
-                  const isNumber = typeof value === "number";
-
+                  const isActive = sortBy === field;
                   return (
-                    <td
+                    <th
                       key={field}
-                      className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
-                        }`}
+                      onClick={() => toggleSort(field)}
+                      className="px-3 py-2 text-left text-xs font-medium uppercase cursor-pointer"
                     >
-                      {value ?? "—"}
-                    </td>
+                      {field.split(".").pop()}
+                      {isActive && (sortDir === "asc" ? " ↑" : " ↓")}
+                    </th>
                   );
                 })}
               </tr>
-            ))}
-          </tbody>
 
-        </table>
-        <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-card">
-          <span className="text-xs text-muted">
-            Page {page + 1} of {totalPages || 1}
-          </span>
+              {/* Column filters */}
+              <tr className="border-t border-border">
+                <th className="sticky left-0 top-0 z-30 bg-card px-2 py-1" />
+                <th className="px-2 py-1" />
 
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(p - 1, 0))}
-              disabled={page === 0}
-              className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
-            >
-              Prev
-            </button>
+                {widget.fields?.map((field) => {
+                  const sampleValue = field
+                    .split(".")
+                    .reduce((acc: any, key) => acc?.[key], data[0]?.raw);
 
-            <button
-              onClick={() =>
-                setPage((p) => Math.min(p + 1, totalPages - 1))
-              }
-              disabled={page >= totalPages - 1}
-              className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
-            >
-              Next
-            </button>
+                  const isNumber = typeof sampleValue === "number";
+
+                  return (
+                    <th key={field} className="px-2 py-1">
+                      <input
+                        type={isNumber ? "number" : "text"}
+                        placeholder={isNumber ? "Min" : "Filter"}
+                        value={columnFilters[field] ?? ""}
+                        onChange={(e) =>
+                          setColumnFilters((prev) => ({
+                            ...prev,
+                            [field]: e.target.value,
+                          }))
+                        }
+                        className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
+                      />
+                    </th>
+                  );
+                })}
+              </tr>
+
+            </thead>
+
+
+            {/* Body */}
+            <tbody>
+              {paginatedData.map((row, idx) => (
+                <tr
+                  key={getTicker(row) ?? idx}
+                  className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5"
+                >
+                  {/* Company (sticky) */}
+                  <td className="sticky left-0 z-20 bg-background px-3 py-2 max-w-[220px] truncate">
+                    {getCompany(row)}
+                  </td>
+
+                  {/* Ticker */}
+                  <td className="px-3 py-2 font-mono">
+                    {getTicker(row)}
+                  </td>
+
+                  {/* Metrics */}
+                  {widget.fields?.map((field) => {
+                    const value = getValue(row, field);
+
+                    const isNumber = typeof value === "number";
+
+                    return (
+                      <td
+                        key={field}
+                        className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
+                          }`}
+                      >
+                        {value ?? "—"}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+
+          </table>
+          <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-card">
+            <span className="text-xs text-muted">
+              Page {page + 1} of {totalPages || 1}
+            </span>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage((p) => Math.max(p - 1, 0))}
+                disabled={page === 0}
+                className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
+              >
+                Prev
+              </button>
+
+              <button
+                onClick={() =>
+                  setPage((p) => Math.min(p + 1, totalPages - 1))
+                }
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
           </div>
-        </div>
 
+        </div>
       </div>
-    </div>
+    </WidgetState>
   );
 }
