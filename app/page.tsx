@@ -5,6 +5,7 @@ import AppHeader from "@/components/AppHeader";
 import WidgetShell from "@/components/widgets/WidgetShell";
 import AddWidgetPlaceholder from "@/components/widgets/AddWidgetPlaceholder";
 import AddWidgetModal from "@/components/widgets/AddWidgetModal";
+import TemplateSelectorModal from "@/components/widgets/TemplateSelectorModal";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import {
   DndContext,
@@ -19,7 +20,9 @@ import {
 export default function Home() {
   const widgets = useDashboardStore((s) => s.widgets);
   const reorderWidgets = useDashboardStore((s) => s.reorderWidgets);
+  const replaceWidgets = useDashboardStore((s) => s.replaceWidgets);
   const [modalOpen, setModalOpen] = useState(false);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -33,9 +36,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-background/50">
-      <AppHeader onAddClick={() => setModalOpen(true)} />
+      <AppHeader
+        onAddClick={() => setModalOpen(true)}
+        onTemplatesClick={() => setTemplateModalOpen(true)}
+      />
 
       <AddWidgetModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <TemplateSelectorModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelectTemplate={(template) => replaceWidgets(template.widgets)}
+      />
 
       <div className="max-w-[1600px] mx-auto p-6 md:p-8">
         {widgets.length === 0 ? (

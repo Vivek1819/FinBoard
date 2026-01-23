@@ -1,14 +1,15 @@
 "use client";
 
-import { ChartNoAxesCombined, Plus } from "lucide-react";
+import { ChartNoAxesCombined, Plus, LayoutTemplate } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import DashboardActions from "@/components/dashboard/DashboardActions";
 
 type Props = {
     onAddClick: () => void;
+    onTemplatesClick: () => void;
 };
 
-export default function AppHeader({ onAddClick }: Props) {
+export default function AppHeader({ onAddClick, onTemplatesClick }: Props) {
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl transition-all supports-[backdrop-filter]:bg-background/60">
             <div className="flex h-16 items-center justify-between px-6 max-w-[1920px] mx-auto">
@@ -36,6 +37,15 @@ export default function AppHeader({ onAddClick }: Props) {
                     </div>
 
                     <div className="hidden md:block h-6 w-px bg-border/50" />
+
+                    <button
+                        onClick={onTemplatesClick}
+                        className="group relative inline-flex items-center justify-center gap-2 rounded-lg bg-card border border-border px-3 py-2 text-sm font-semibold text-foreground shadow-sm hover:bg-muted/50 transition-all hover:-translate-y-0.5"
+                        title="Templates"
+                    >
+                        <LayoutTemplate size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
+                        <span className="hidden sm:inline">Templates</span>
+                    </button>
 
                     <button
                         onClick={onAddClick}
