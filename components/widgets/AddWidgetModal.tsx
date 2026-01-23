@@ -11,6 +11,7 @@ import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import { FINNHUB_POPULAR } from "@/lib/finnhubPopular";
 import { ALPHA_VANTAGE_SYMBOLS } from "@/lib/alphaVantageSymbols";
 import FieldSelector from "@/components/field-selector/FieldSelector";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -234,9 +235,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div
-                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
                 onClick={() => {
                     resetForm();
                     onClose();
@@ -244,44 +245,46 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             />
 
 
-            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl">
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
-                    <h2 className="text-lg font-semibold">Create Widget</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+                    <h2 className="text-lg font-semibold tracking-tight">Create Widget</h2>
                     <button
                         onClick={() => {
                             resetForm();
                             onClose();
                         }}
+                        className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                        <X size={16} />
+                        <X size={18} />
                     </button>
 
                 </div>
 
                 {/* Body */}
-                <div className="px-6 py-5 space-y-6">
+                <div className="px-6 py-5 space-y-6 overflow-y-auto custom-scrollbar">
                     {/* Title */}
                     <div>
-                        <label className="block text-sm mb-1">Widget name</label>
+                        <label className="block text-sm font-medium mb-1.5 text-foreground">Widget name</label>
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full rounded-md px-3 py-2 bg-background border border-border"
+                            className="w-full rounded-lg px-3 py-2 bg-background border border-border focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            placeholder="My Widget"
                         />
                     </div>
                     {/* Type */}
                     <div>
-                        <label className="block text-sm mb-2">Display type</label>
+                        <label className="block text-sm font-medium mb-2 text-foreground">Display type</label>
                         <div className="flex gap-2">
                             {(["card", "table", "chart"] as WidgetType[]).map((t) => (
                                 <button
                                     key={t}
                                     onClick={() => setType(t)}
-                                    className={`flex-1 px-3 py-2 rounded-md text-sm ${type === t
-                                        ? "bg-emerald-500/15 text-emerald-400"
-                                        : "bg-background border border-border"
+                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${type === t
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                                         }`}
                                 >
                                     {t.toUpperCase()}
@@ -292,7 +295,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                     {type === "card" && (
                         <div>
-                            <label className="block text-sm mb-2">Card type</label>
+                            <label className="block text-sm font-medium mb-2 text-foreground">Card type</label>
                             <div className="grid grid-cols-2 gap-2">
                                 {[
                                     ["watchlist", "Watchlist"],
@@ -303,9 +306,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     <button
                                         key={value}
                                         onClick={() => setCardVariant(value as any)}
-                                        className={`px-3 py-2 rounded-md text-sm border ${cardVariant === value
-                                            ? "bg-emerald-500/15 text-emerald-400"
-                                            : "bg-background border-border"
+                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border ${cardVariant === value
+                                            ? "border-primary bg-primary/5 text-primary"
+                                            : "border-border bg-background hover:bg-muted/50"
                                             }`}
                                     >
                                         {label}
@@ -318,7 +321,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                     {/* API Provider */}
                     <div>
-                        <label className="block text-sm font-medium mb-2">
+                        <label className="block text-sm font-medium mb-2 text-foreground">
                             API Provider (optional)
                         </label>
                         <div className="grid grid-cols-2 gap-2">
@@ -338,9 +341,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                             setFields([]);
                                             setSelectedFields([]);
                                         }}
-                                        className={`rounded-md px-3 py-2 text-sm text-left border transition ${isDisabled
-                                            ? "opacity-40 cursor-not-allowed bg-background"
-                                            : "bg-background border-border hover:bg-white/10 hover:border-white/20"
+                                        className={`rounded-lg px-3 py-2 text-sm text-left border transition-all ${isDisabled
+                                            ? "opacity-40 cursor-not-allowed bg-muted/20"
+                                            : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
                                             }`}
                                     >
                                         {name}
@@ -353,7 +356,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                     {/* API URL */}
                     <div>
-                        <label className="block text-sm mb-1">API Endpoint</label>
+                        <label className="block text-sm font-medium mb-1.5 text-foreground">API Endpoint</label>
                         <div className="flex gap-2">
                             <input
                                 value={apiUrl}
@@ -363,22 +366,29 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     setFields([]);
                                     setSelectedFields([]);
                                 }}
-                                className="flex-1 rounded-md px-3 py-2 bg-background border border-border"
+                                className="flex-1 rounded-lg px-3 py-2 bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none"
+                                placeholder="https://api.example.com..."
                             />
                             <button
                                 onClick={testApi}
                                 disabled={!apiUrl || isTesting}
-                                className="px-4 py-2 rounded-md bg-emerald-600 text-white"
+                                className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium transition-colors disabled:opacity-50"
                             >
                                 {isTesting ? "Testing…" : "Test"}
                             </button>
                         </div>
 
                         {testStatus === "success" && (
-                            <div className="mt-2 text-sm text-emerald-400">API connection successful</div>
+                            <div className="mt-2 text-xs font-medium text-emerald-500 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                API connection successful
+                            </div>
                         )}
                         {testStatus === "error" && (
-                            <div className="mt-2 text-sm text-red-400">{errorMessage}</div>
+                            <div className="mt-2 text-xs font-medium text-destructive flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                                {errorMessage}
+                            </div>
                         )}
                     </div>
 
@@ -386,15 +396,15 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         <div className="space-y-4">
                             {/* Chart Type */}
                             <div>
-                                <label className="block text-sm mb-2">Chart type</label>
+                                <label className="block text-sm font-medium mb-2 text-foreground">Chart type</label>
                                 <div className="flex gap-2">
                                     {["line", "candle"].map((v) => (
                                         <button
                                             key={v}
                                             onClick={() => setChartVariant(v as any)}
-                                            className={`flex-1 px-3 py-2 rounded-md text-sm ${chartVariant === v
-                                                ? "bg-emerald-500/15 text-emerald-400"
-                                                : "bg-background border border-border"
+                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${chartVariant === v
+                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
                                                 }`}
                                         >
                                             {v.toUpperCase()}
@@ -404,37 +414,33 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium">
+                                <label className="block text-sm font-medium text-foreground">
                                     Select stock
                                 </label>
-
-                                <select
+                                <CustomSelect
                                     value={chartTicker}
-                                    onChange={(e) => setChartTicker(e.target.value)}
-                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                                >
-                                    {ALPHA_VANTAGE_SYMBOLS.map(s => (
-                                        <option key={s.ticker} value={s.ticker}>
-                                            {s.company} ({s.ticker})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={setChartTicker}
+                                    options={ALPHA_VANTAGE_SYMBOLS.map(s => ({
+                                        value: s.ticker,
+                                        label: `${s.company} (${s.ticker})`
+                                    }))}
+                                />
                             </div>
 
 
 
                             {/* Interval */}
                             <div>
-                                <label className="block text-sm mb-1">Interval</label>
-                                <select
+                                <label className="block text-sm font-medium mb-1.5 text-foreground">Interval</label>
+                                <CustomSelect
                                     value={chartInterval}
-                                    onChange={(e) => setChartInterval(e.target.value as any)}
-                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                                >
-                                    <option value="daily">Daily</option>
-                                    <option value="weekly">Weekly</option>
-                                    <option value="monthly">Monthly</option>
-                                </select>
+                                    onChange={(v) => setChartInterval(v as any)}
+                                    options={[
+                                        { value: "daily", label: "Daily" },
+                                        { value: "weekly", label: "Weekly" },
+                                        { value: "monthly", label: "Monthly" },
+                                    ]}
+                                />
                             </div>
                         </div>
                     )}
@@ -446,7 +452,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                             (type === "card" && cardVariant === "financial")) && (
 
                             <div className="space-y-3">
-                                <label className="block text-sm font-medium">
+                                <label className="block text-sm font-medium text-foreground">
                                     Select fields
                                 </label>
 
@@ -466,16 +472,16 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         testStatus === "success" &&
                         allTickers.length > 0 && (
                             <div className="space-y-3">
-                                <label className="block text-sm font-medium">
+                                <label className="block text-sm font-medium text-foreground">
                                     Select watchlist items
                                 </label>
 
-                                <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
+                                <div className="max-h-48 overflow-auto rounded-lg border border-border p-2 space-y-1 custom-scrollbar">
                                     {allTickers.map(({ ticker, company }, index) => {
                                         const selected = watchlistTickers.includes(ticker);
 
                                         return (
-                                            <label key={`${ticker}-${index}`} className="flex items-center gap-2 text-sm">
+                                            <label key={`${ticker}-${index}`} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
                                                 <input
                                                     type="checkbox"
                                                     checked={selected}
@@ -486,8 +492,10 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                                                 : [...prev, ticker]
                                                         )
                                                     }
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                                                 />
-                                                <span>{company} ({ticker})</span>
+                                                <span className="font-medium">{ticker}</span>
+                                                <span className="text-muted-foreground text-xs truncate">{company}</span>
                                             </label>
                                         );
                                     })}
@@ -500,46 +508,48 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         testStatus === "success" &&
                         stockOptions.length > 0 && (
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium">
+                                <label className="block text-sm font-medium text-foreground">
                                     Select stock
                                 </label>
-
-                                <select
+                                <CustomSelect
                                     value={primaryTicker ?? ""}
-                                    onChange={(e) => setPrimaryTicker(e.target.value)}
-                                    className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                                >
-                                    <option value="">Select stock</option>
-                                    {stockOptions.map(({ ticker, company }) => (
-                                        <option key={ticker} value={ticker}>
-                                            {company} ({ticker})
-                                        </option>
-                                    ))}
-                                </select>
+                                    onChange={setPrimaryTicker}
+                                    options={[
+                                        { value: "", label: "Select stock" },
+                                        ...stockOptions.map(({ ticker, company }) => ({
+                                            value: ticker,
+                                            label: `${company} (${ticker})`
+                                        }))
+                                    ]}
+                                />
                             </div>
                         )}
 
 
                     {/* Refresh */}
                     <div>
-                        <label className="block text-sm mb-1">Refresh interval</label>
-                        <select
-                            value={refreshInterval}
-                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-                            className="w-full rounded-md px-3 py-2 bg-background border border-border
-"
-                        >
-                            <option value={15}>15 seconds</option>
-                            <option value={30}>30 seconds</option>
-                            <option value={60}>1 minute</option>
-                            <option value={300}>5 minutes</option>
-                        </select>
+                        <label className="block text-sm font-medium mb-1.5 text-foreground">Refresh interval</label>
+                        <CustomSelect
+                            value={String(refreshInterval)}
+                            onChange={(v) => setRefreshInterval(Number(v))}
+                            options={[
+                                { value: "15", label: "15 seconds" },
+                                { value: "30", label: "30 seconds" },
+                                { value: "60", label: "1 minute" },
+                                { value: "300", label: "5 minutes" },
+                            ]}
+                        />
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-white/10">
-                    <button onClick={onClose}>Cancel</button>
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20 rounded-b-2xl">
+                    <button
+                        onClick={onClose}
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={handleAddWidget}
                         disabled={
@@ -554,7 +564,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 cardVariant === "watchlist" &&
                                 watchlistTickers.length === 0)
                         }
-                        className="px-4 py-2 rounded-md bg-emerald-600 text-white disabled:opacity-40"
+                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
                     >
                         Add Widget
                     </button>

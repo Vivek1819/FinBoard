@@ -30,10 +30,10 @@ export default function Home() {
 
 
   return (
-    <main>
+    <main className="min-h-screen bg-background/50">
       <AppHeader />
 
-      <div className="p-10">
+      <div className="max-w-[1600px] mx-auto p-6 md:p-8">
         {widgets.length === 0 ? (
           /* existing empty state stays */
           <></>
@@ -46,7 +46,7 @@ export default function Home() {
               items={widgets.map((w) => w.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-min">
                 {widgets.map((widget) => (
                   <WidgetShell key={widget.id} widget={widget} />
                 ))}

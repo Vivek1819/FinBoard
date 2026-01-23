@@ -34,20 +34,21 @@ export default function DashboardActions() {
     }
 
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
             {/* Export */}
             <button
                 onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-accent transition"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 transition-colors"
+                title="Export Layout"
             >
-                <Download size={14} />
-                Export
+                <Download size={15} />
+                <span>Export</span>
             </button>
 
             {/* Import */}
-            <label className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border border-border bg-card hover:bg-accent cursor-pointer transition">
-                <Upload size={14} />
-                Import
+            <label className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60 cursor-pointer transition-colors">
+                <Upload size={15} />
+                <span>Import</span>
                 <input
                     type="file"
                     accept="application/json"
@@ -56,6 +57,5 @@ export default function DashboardActions() {
                 />
             </label>
         </div>
-
     );
 }

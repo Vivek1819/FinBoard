@@ -16,30 +16,19 @@ type Props = {
 export default function TableConfigModal({ open, onClose, widget }: Props) {
     const updateWidget = useDashboardStore((s) => s.updateWidget);
 
-    // ✅ Local editable state
     const [title, setTitle] = useState(widget.title);
     const [selectedFields, setSelectedFields] = useState<string[]>(
         widget.fields ?? []
     );
 
-    // ✅ Sync when modal opens or widget changes
     useEffect(() => {
         if (!open) return;
         setTitle(widget.title);
         setSelectedFields(widget.fields ?? []);
     }, [open, widget]);
 
-    // ✅ Hooks done — safe early return
     if (!open || widget.type !== "table" || !widget.availableFields) {
         return null;
-    }
-
-    function toggleField(field: string) {
-        setSelectedFields((prev) =>
-            prev.includes(field)
-                ? prev.filter((f) => f !== field)
-                : [...prev, field]
-        );
     }
 
     function save() {
@@ -52,46 +41,66 @@ export default function TableConfigModal({ open, onClose, widget }: Props) {
     }
 
     return createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
 
-            <div className="relative w-full max-w-sm rounded-xl bg-card border border-border p-4">
+            <div className="relative w-full max-w-md rounded-2xl bg-card border border-border/50 shadow-2xl overflow-hidden">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium">Edit Table</h3>
-                    <button onClick={onClose}>
-                        <X size={14} />
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+                    <div>
+                        <h3 className="text-lg font-semibold tracking-tight text-foreground">Table Settings</h3>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">Configure your table widget</p>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    >
+                        <X size={16} />
                     </button>
                 </div>
 
-                {/* Title */}
-                <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Title</label>
-                    <input
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        className="w-full rounded-md px-3 py-2 bg-background border border-border"
-                    />
+                {/* Content */}
+                <div className="p-5 space-y-5 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                    {/* Title */}
+                    <div>
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            Widget Title
+                        </label>
+                        <input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            className="w-full rounded-xl px-3 py-2.5 bg-muted/30 border border-border/50 focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm"
+                            placeholder="Enter title..."
+                        />
+                    </div>
+
+                    {/* Fields */}
+                    <div>
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            Visible Columns ({selectedFields.length} selected)
+                        </label>
+                        <FieldSelector
+                            fields={widget.availableFields.map(path => ({ path }))}
+                            selected={selectedFields}
+                            onChange={setSelectedFields}
+                        />
+                    </div>
                 </div>
 
-                {/* Fields */}
-                <FieldSelector
-                    fields={widget.availableFields.map(path => ({ path }))}
-                    selected={selectedFields}
-                    onChange={setSelectedFields}
-                />
-
-
                 {/* Footer */}
-                <div className="mt-4 flex justify-end gap-2">
-                    <button onClick={onClose} className="text-sm text-muted">
+                <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-border/50 bg-muted/10">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    >
                         Cancel
                     </button>
                     <button
                         onClick={save}
-                        className="px-4 py-2 rounded-md bg-emerald-600 text-white text-sm"
+                        disabled={selectedFields.length === 0}
+                        className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:pointer-events-none"
                     >
-                        Save
+                        Save Changes
                     </button>
                 </div>
             </div>

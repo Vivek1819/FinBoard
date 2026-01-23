@@ -1,10 +1,10 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, ChevronDown, Check, LineChart, CandlestickChart } from "lucide-react";
 import { WidgetConfig, ChartInterval, ChartVariant } from "@/types/widget";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ALPHA_VANTAGE_SYMBOLS } from "@/lib/alphaVantageSymbols";
 
 type Props = {
@@ -13,12 +13,120 @@ type Props = {
   widget: WidgetConfig;
 };
 
+// Custom Select Component with Portal
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select..."
+}: {
+  value: string;
+  onChange: (val: string) => void;
+  options: { value: string; label: string; sublabel?: string }[];
+  placeholder?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      // Check if click is outside both the button container AND the dropdown portal
+      const isOutsideButton = ref.current && !ref.current.contains(target);
+      const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
+
+      if (isOutsideButton && isOutsideDropdown) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width
+      });
+    }
+  }, [isOpen]);
+
+  const selected = options.find(o => o.value === value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-muted/30 border border-border/50 hover:border-border hover:bg-muted/50 transition-all text-left"
+      >
+        <div className="flex-1 min-w-0">
+          {selected ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground truncate">{selected.label}</span>
+              {selected.sublabel && (
+                <span className="text-xs text-muted-foreground/60 font-mono">{selected.sublabel}</span>
+              )}
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">{placeholder}</span>
+          )}
+        </div>
+        <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+
+      {isOpen && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed py-1 bg-popover border border-border/50 rounded-xl shadow-xl max-h-60 overflow-auto custom-scrollbar"
+          style={{
+            top: position.top,
+            left: position.left,
+            width: position.width,
+            zIndex: 9999
+          }}
+        >
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${value === option.value ? "bg-primary/5" : ""
+                }`}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <span className={`text-sm truncate ${value === option.value ? "font-semibold text-primary" : "text-foreground"}`}>
+                  {option.label}
+                </span>
+                {option.sublabel && (
+                  <span className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider">{option.sublabel}</span>
+                )}
+              </div>
+              {value === option.value && <Check size={14} className="text-primary flex-shrink-0" />}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </div>
+  );
+}
+
 export default function ChartConfigModal({ open, onClose, widget }: Props) {
 
   const [title, setTitle] = useState(widget.title);
 
   const updateWidget = useDashboardStore((s) => s.updateWidget);
-
 
   const [symbol, setSymbol] = useState("IBM");
   const [interval, setInterval] = useState<ChartInterval>("daily");
@@ -68,96 +176,119 @@ export default function ChartConfigModal({ open, onClose, widget }: Props) {
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-sm rounded-xl bg-card border border-border p-4">
+      <div className="relative w-full max-w-md rounded-2xl bg-card border border-border/50 shadow-2xl overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium">Edit Chart</h3>
-          <button onClick={onClose}>
-            <X size={14} />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">Chart Settings</h3>
+            <p className="text-xs text-muted-foreground/60 mt-0.5">Configure your chart widget</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <X size={16} />
           </button>
         </div>
 
-        {/* Title */}
-        <div className="mb-3">
-          <label className="block text-xs mb-1">Title</label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
-          />
-        </div>
+        {/* Content */}
+        <div className="p-5 space-y-5">
+          {/* Title */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+              Widget Title
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-xl px-3 py-2.5 bg-muted/30 border border-border/50 focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm"
+              placeholder="Enter title..."
+            />
+          </div>
 
+          {/* Symbol */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+              Stock Symbol
+            </label>
+            <CustomSelect
+              value={symbol}
+              onChange={setSymbol}
+              placeholder="Choose a stock..."
+              options={ALPHA_VANTAGE_SYMBOLS.map(({ ticker, company }) => ({
+                value: ticker,
+                label: company,
+                sublabel: ticker
+              }))}
+            />
+          </div>
 
-        {/* Symbol */}
-        <div className="mb-3">
-          <label className="block text-xs mb-1">Symbol</label>
-          <select
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
-          >
-            {ALPHA_VANTAGE_SYMBOLS.map(({ ticker, company }) => (
-              <option key={ticker} value={ticker}>
-                {company} ({ticker})
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Interval */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+              Time Interval
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(["daily", "weekly", "monthly"] as ChartInterval[]).map((int) => (
+                <button
+                  key={int}
+                  onClick={() => setInterval(int)}
+                  className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all border ${interval === int
+                    ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
+                    : "border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border text-muted-foreground"
+                    }`}
+                >
+                  {int.charAt(0).toUpperCase() + int.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {/* Interval */}
-        <div className="mb-3">
-          <label className="block text-xs mb-1">Interval</label>
-          <select
-            value={interval}
-            onChange={(e) =>
-              setInterval(e.target.value as ChartInterval)
-            }
-            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
-          >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </select>
-        </div>
-
-        {/* Variant */}
-        <div className="mb-4">
-          <label className="block text-xs mb-1">Chart Type</label>
-          <div className="flex gap-2">
-            {(["line", "candle"] as ChartVariant[]).map((v) => (
-              <button
-                key={v}
-                onClick={() => setVariant(v)}
-                className={`flex-1 px-2 py-1 rounded-md text-xs border ${variant === v
-                  ? "bg-accent text-accent-foreground"
-                  : "border-border"
-                  }`}
-              >
-                {v.toUpperCase()}
-              </button>
-            ))}
+          {/* Variant */}
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+              Chart Type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: "line", label: "Line", icon: LineChart },
+                { value: "candle", label: "Candlestick", icon: CandlestickChart }
+              ] as { value: ChartVariant; label: string; icon: any }[]).map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  onClick={() => setVariant(value)}
+                  className={`flex items-center justify-center gap-2 px-3 py-3 rounded-xl text-sm font-semibold transition-all border ${variant === value
+                    ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
+                    : "border-border/50 bg-muted/20 hover:bg-muted/40 hover:border-border text-muted-foreground"
+                    }`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2">
+        <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-border/50 bg-muted/10">
           <button
             onClick={onClose}
-            className="px-3 py-1 text-sm rounded-md border"
+            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
-            className="px-3 py-1 text-sm rounded-md bg-primary text-white"
+            className="px-5 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all shadow-sm"
           >
-            Save
+            Save Changes
           </button>
         </div>
       </div>

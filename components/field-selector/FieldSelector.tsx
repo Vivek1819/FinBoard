@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronRight, ChevronDown, Check, Minus } from "lucide-react";
 
 type FieldNode = {
   path: string;
   children?: FieldNode[];
   sample?: any;
 };
-
-
 
 type Props = {
   fields: { path: string }[];
@@ -73,14 +72,6 @@ export default function FieldSelector({
     }));
   }
 
-  function toggle(path: string) {
-    onChange(
-      selected.includes(path)
-        ? selected.filter((p) => p !== path)
-        : [...selected, path]
-    );
-  }
-
   function collectLeafPaths(node: FieldNode): string[] {
     if (!node.children) return [node.path];
     return node.children.flatMap(collectLeafPaths);
@@ -96,37 +87,73 @@ export default function FieldSelector({
     };
   }
 
+  // Custom checkbox component
+  const CustomCheckbox = ({
+    checked,
+    indeterminate,
+    onChange
+  }: {
+    checked: boolean;
+    indeterminate: boolean;
+    onChange: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${checked || indeterminate
+          ? "bg-primary border-primary text-primary-foreground"
+          : "border-border hover:border-primary/50 bg-background"
+        }`}
+    >
+      {checked && <Check size={10} strokeWidth={3} />}
+      {indeterminate && !checked && <Minus size={10} strokeWidth={3} />}
+    </button>
+  );
 
   function renderNode(node: FieldNode, depth = 0) {
     const isLeaf = !node.children;
     const isCollapsed = collapsed[node.path];
-
     const { checked, indeterminate } = getNodeState(node);
+    const label = node.path.split(".").pop() ?? "";
 
     return (
-      <div key={node.path} style={{ paddingLeft: depth * 12 }}>
-        <div className="flex items-center gap-2 text-sm">
-          {/* Expand / collapse */}
+      <div key={node.path}>
+        <div
+          className={`group flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer ${checked ? "bg-primary/5" : ""
+            }`}
+          style={{ paddingLeft: depth * 16 + 8 }}
+          onClick={() => {
+            const paths = collectLeafPaths(node);
+            onChange(
+              checked
+                ? selected.filter((p) => !paths.includes(p))
+                : Array.from(new Set([...selected, ...paths]))
+            );
+          }}
+        >
+          {/* Expand / collapse button */}
           {!isLeaf && (
             <button
               type="button"
-              onClick={() => toggleCollapse(node.path)}
-              className="text-xs w-4 text-muted hover:text-foreground"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCollapse(node.path);
+              }}
+              className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
-              {isCollapsed ? "▶" : "▼"}
+              {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
             </button>
           )}
 
-          {/* Checkbox (parent + leaf) */}
-          <input
-            type="checkbox"
+          {/* Spacer for leaves to align with parent checkboxes */}
+          {isLeaf && <div className="w-4" />}
+
+          {/* Checkbox */}
+          <CustomCheckbox
             checked={checked}
-            ref={(el) => {
-              if (el) el.indeterminate = indeterminate;
-            }}
+            indeterminate={indeterminate}
             onChange={() => {
               const paths = collectLeafPaths(node);
-
               onChange(
                 checked
                   ? selected.filter((p) => !paths.includes(p))
@@ -137,29 +164,36 @@ export default function FieldSelector({
 
           {/* Label */}
           <span
-            className={`font-mono text-xs ${!isLeaf ? "font-semibold text-foreground" : ""
+            className={`text-sm select-none ${!isLeaf
+                ? "font-semibold text-foreground"
+                : checked
+                  ? "text-foreground font-medium"
+                  : "text-foreground/80"
               }`}
           >
-            {node.path.split(".").pop()}
+            {label.replace(/_/g, " ")}
           </span>
 
-          {/* Sample value */}
+          {/* Sample value badge */}
           {isLeaf && node.sample !== undefined && (
-            <span className="text-xs text-muted truncate">
-              = {String(node.sample)}
+            <span className="ml-auto text-[10px] text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded truncate max-w-[120px] font-mono">
+              {String(node.sample)}
             </span>
           )}
         </div>
 
         {/* Children */}
-        {!isLeaf && !isCollapsed &&
-          node.children!.map((c) => renderNode(c, depth + 1))}
+        {!isLeaf && !isCollapsed && (
+          <div className="border-l border-border/50 ml-[23px]">
+            {node.children!.map((c) => renderNode(c, depth + 1))}
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="max-h-56 overflow-auto rounded-md border border-border p-2 space-y-1">
+    <div className="max-h-56 overflow-auto rounded-lg border border-border bg-background/50 p-1.5 space-y-0.5 custom-scrollbar">
       {tree.map((n) => renderNode(n))}
     </div>
   );

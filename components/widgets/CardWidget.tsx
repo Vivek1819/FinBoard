@@ -5,6 +5,7 @@ import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
 import { cachedFetch } from "@/lib/apiCache";
+import { ArrowUpRight, ArrowDownRight, Activity, TrendingUp, TrendingDown } from "lucide-react";
 
 type Props = {
     widget: WidgetConfig;
@@ -72,7 +73,7 @@ export default function CardWidget({ widget }: Props) {
 
         } catch (err: any) {
             if (err.message === "RATE_LIMIT") {
-                setError("Rate limit reached. Retrying shortly.");
+                setError("Rate limit reached.");
             } else {
                 setError("Failed to load data.");
             }
@@ -114,266 +115,203 @@ export default function CardWidget({ widget }: Props) {
         widget.card?.tickerField,
     ]);
 
+    // Trend Badge Component
+    const TrendBadge = ({ value }: { value: number }) => {
+        const isPositive = value >= 0;
+        return (
+            <span className={`inline-flex items-center gap-0.5 text-xs font-semibold px-2.5 py-1 rounded-full ${isPositive
+                    ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400"
+                    : "text-rose-700 bg-rose-100 dark:bg-rose-500/15 dark:text-rose-400"
+                }`}>
+                {isPositive ? <ArrowUpRight size={12} strokeWidth={2.5} /> : <ArrowDownRight size={12} strokeWidth={2.5} />}
+                {value > 0 ? "+" : ""}{value}%
+            </span>
+        );
+    };
+
     if ((variant === "performance" || variant === "financial") && !hasData) {
         return (
-            <WidgetState
-                loading={loading}
-                error={error}
-                empty
-            >
-                <div />
-            </WidgetState>
-        );
-    }
-
-    if (variant === "gainers") {
-        const rows = items;
-
-        const topGainers = [...rows]
-            .sort((a, b) => (b.percent_change ?? 0) - (a.percent_change ?? 0))
-            .slice(0, 5);
-
-        return (
-            <WidgetState
-                loading={loading}
-                error={error}
-                empty={!items.length}
-            >
-                <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                        {topGainers.map((stock: any) => (
-                            <div
-                                key={stock.ticker}
-                                className="flex items-center justify-between"
-                            >
-                                <div>
-                                    <div className="text-sm font-medium">{stock.ticker}</div>
-                                    <div className="text-xs text-muted truncate">
-                                        {stock.company}
-                                    </div>
-                                </div>
-
-                                <div className="text-right">
-                                    <div className="text-sm font-medium tabular-nums">
-                                        ₹{stock.price}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-medium ${stock.percent_change >= 0
-                                            ? "text-emerald-400"
-                                            : "text-red-400"
-                                            }`}
-                                    >
-                                        {stock.percent_change}%
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
+            <WidgetState loading={loading} error={error} empty>
+                <div className="h-full flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full border-2 border-muted-foreground/20 border-t-primary animate-spin" />
                 </div>
             </WidgetState>
         );
     }
 
-    if (variant === "watchlist") {
-        const rows = items;
+    // ═══════════════════════════════════════════════════════════════════
+    // LIST VARIANTS (Gainers / Watchlist) - Creative card-based design
+    // ═══════════════════════════════════════════════════════════════════
+    if (variant === "gainers" || variant === "watchlist") {
+        const rows = variant === "watchlist"
+            ? items.filter((stock: any) => widget.card?.watchlistTickers?.includes(stock.ticker))
+            : [...items].sort((a, b) => (b.percent_change ?? 0) - (a.percent_change ?? 0)).slice(0, 5);
 
-        const watchlist = widget.card?.watchlistTickers ?? [];
-
-        const tickerField = widget.card?.tickerField;
-
-        if (!tickerField) {
+        if (variant === "watchlist" && !widget.card?.tickerField) {
             return (
-                <div className="h-32 flex items-center justify-center text-sm text-muted">
-                    No ticker field configured
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
+                    <div className="p-4 rounded-2xl bg-muted/30 border border-border/50">
+                        <Activity size={28} className="opacity-40" />
+                    </div>
+                    <span className="text-sm font-medium">Configure ticker field</span>
                 </div>
             );
         }
 
-
-        const filtered = rows.filter((stock: any) => {
-            const ticker = stock.ticker;
-
-            return watchlist.includes(ticker);
-        });
-
         return (
-            <WidgetState
-                loading={loading}
-                error={error}
-                empty={!items.length}
-            >
-                <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                        {filtered.map((stock: any, idx) => (
-                            <div
-                                key={`${stock.ticker}-${idx}`}
-                                className="flex items-center justify-between"
-                            >
-                                <div>
-                                    <div className="text-sm font-medium">{stock.ticker}</div>
-                                    <div className="text-xs text-muted truncate">
-                                        {stock.company}
-                                    </div>
-                                </div>
-
-                                <div className="text-right">
-                                    <div className="text-sm font-medium tabular-nums">
-                                        ₹{stock.price}
-                                    </div>
-                                    <div
-                                        className={`text-xs font-medium ${stock.percent_change >= 0
-                                            ? "text-emerald-400"
-                                            : "text-red-400"
-                                            }`}
-                                    >
-                                        {stock.percent_change}%
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </WidgetState>
-        );
-    }
-
-    if (variant === "performance") {
-        if (!item) {
-            return (
-                <WidgetState
-                    loading={loading}
-                    error={error}
-                    empty
-                >
-                    <div />
-                </WidgetState>
-            );
-        }
-
-        const stock = item;
-
-        return (
-            <WidgetState
-                loading={loading}
-                error={error}
-                empty={false}
-            >
-                <div className="flex flex-col justify-between h-full">
-                    {/* Header */}
-                    <div>
-                        <div className="text-sm font-medium truncate">
-                            {selectedMeta?.company ?? selectedTicker ?? "—"}
-                        </div>
-                        <div className="text-xs text-muted font-mono">
-                            {selectedTicker ?? "—"}
-                        </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="mt-4">
-                        <div className="text-4xl font-semibold tabular-nums">
-                            ₹{stock.price}
-                        </div>
-
-                        <div
-                            className={`mt-1 text-sm font-medium ${stock.percent_change >= 0
-                                ? "text-emerald-400"
-                                : "text-red-400"
-                                }`}
-                        >
-                            {stock.percent_change}% ({stock.net_change})
-                        </div>
-                    </div>
-
-                    {stock.overall_rating && (
-                        <div className="mt-4 text-xs text-muted">
-                            Trend:{" "}
-                            <span className="font-medium">
-                                {stock.overall_rating}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </WidgetState>
-        );
-    }
-
-
-    if (variant === "financial" && fields.length === 0) {
-        return (
-            <WidgetState loading={false} error={null} empty>
-                <div />
-            </WidgetState>
-        );
-    }
-
-
-
-    const primaryField = fields[0];
-    const source = item?.raw;
-
-    const primaryValue =
-        source && primaryField
-            ? primaryField.split(".").reduce((acc: any, k) => acc?.[k], source)
-            : undefined;
-
-
-
-
-    return (
-        <WidgetState
-            loading={loading}
-            error={error}
-            empty={!item}
-        >
-            <div className="flex flex-col h-full justify-between">
-                {/* Header */}
-                <div className="mb-3">
-                    <div className="text-sm font-medium truncate">
-                        {selectedMeta?.company ?? selectedTicker ?? "—"}
-                    </div>
-                    <div className="text-xs text-muted font-mono">
-                        {selectedTicker ?? "—"}
-                    </div>
-                </div>
-
-                {/* Primary metric */}
-                <div>
-                    <div className="text-xs uppercase tracking-wide text-muted">
-                        {primaryField.split(".").pop()}
-                    </div>
-
-                    <div className="mt-1 text-4xl font-semibold tracking-tight tabular-nums">
-                        {primaryValue !== undefined ? primaryValue : "—"}
-                    </div>
-                </div>
-
-                {/* Divider */}
-                <div className="my-4 h-px bg-white/10" />
-
-                {/* Secondary metrics */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                    {fields.slice(1, 5).map((field) => {
-                        const value = item.raw
-                            ? field.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
-                            : undefined;
-
+            <WidgetState loading={loading} error={error} empty={!items.length}>
+                <div className="flex flex-col h-full gap-2 overflow-y-auto custom-scrollbar -mx-1 px-1">
+                    {rows.map((stock: any, idx) => {
+                        const isPositive = (stock.percent_change ?? 0) >= 0;
 
                         return (
-                            <div key={field}>
-                                <div className="text-xs text-muted">
-                                    {field.split(".").pop()}
+                            <div
+                                key={`${stock.ticker}-${idx}`}
+                                className="group relative flex items-center justify-between p-3 rounded-xl bg-muted/20 hover:bg-muted/40 border border-border/30 hover:border-border/50 transition-all"
+                            >
+                                {/* Left side - Company info */}
+                                <div className="flex items-center gap-3 min-w-0">
+                                    {/* Trend indicator circle */}
+                                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${isPositive
+                                            ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+                                            : "bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-400"
+                                        }`}>
+                                        {isPositive ? <TrendingUp size={14} strokeWidth={2} /> : <TrendingDown size={14} strokeWidth={2} />}
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-foreground truncate leading-tight">
+                                            {stock.company}
+                                        </p>
+                                        <p className="text-[10px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                                            {stock.ticker}
+                                        </p>
+                                    </div>
                                 </div>
-                                <div className="font-medium tabular-nums">
-                                    {value !== undefined ? value : "—"}
+
+                                {/* Right side - Price info */}
+                                <div className="flex flex-col items-end gap-0.5 flex-shrink-0 pl-2">
+                                    <span className="text-sm font-bold tabular-nums text-foreground">
+                                        ₹{stock.price?.toLocaleString()}
+                                    </span>
+                                    <span className={`text-[11px] font-bold tabular-nums ${isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+                                        }`}>
+                                        {stock.percent_change > 0 ? "+" : ""}{stock.percent_change}%
+                                    </span>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
-            </div>
-        </WidgetState>
-    );
+            </WidgetState>
+        );
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PERFORMANCE VARIANT - Compact centered layout
+    // ═══════════════════════════════════════════════════════════════════
+    if (variant === "performance") {
+        if (!item) return <WidgetState loading={loading} error={error} empty><div /></WidgetState>;
+
+        const stock = item;
+        const isPositive = stock.percent_change >= 0;
+
+        return (
+            <WidgetState loading={loading} error={error} empty={false}>
+                <div className="flex flex-col h-full items-center justify-center text-center relative p-2">
+                    {/* Ambient glow */}
+                    <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full blur-[50px] opacity-[0.12] pointer-events-none ${isPositive ? "bg-emerald-500" : "bg-rose-500"
+                        }`} />
+
+                    {/* Stock Name */}
+                    <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+                        {selectedTicker}
+                    </p>
+                    <h2 className="text-xl font-bold text-foreground tracking-tight leading-tight mt-0.5 mb-3">
+                        {selectedMeta?.company ?? selectedTicker ?? "—"}
+                    </h2>
+
+                    {/* Price */}
+                    <div className="flex items-baseline justify-center gap-0.5 mb-2">
+                        <span className="text-base font-medium text-muted-foreground/40">₹</span>
+                        <span className="text-4xl font-black tracking-tighter tabular-nums text-foreground">
+                            {stock.price?.toLocaleString()}
+                        </span>
+                    </div>
+
+                    {/* Trend Badge */}
+                    <div className="flex items-center justify-center gap-2">
+                        <TrendBadge value={stock.percent_change} />
+                        <span className="text-xs font-medium text-muted-foreground/50 tabular-nums">
+                            {stock.net_change > 0 ? "+" : ""}{stock.net_change}
+                        </span>
+                    </div>
+                </div>
+            </WidgetState>
+        );
+    }
 
 
+    // ═══════════════════════════════════════════════════════════════════
+    // FINANCIAL VARIANT - Compact centered layout
+    // ═══════════════════════════════════════════════════════════════════
+    if (variant === "financial") {
+        if (!item || fields.length === 0) return <WidgetState loading={false} error={null} empty><div /></WidgetState>;
+
+        const primaryField = fields[0];
+        const primaryValue = item.raw
+            ? primaryField.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
+            : undefined;
+
+        const primaryLabel = primaryField.split(".").pop()?.replace(/_/g, " ");
+
+        return (
+            <WidgetState loading={loading} error={error} empty={!item}>
+                <div className="flex flex-col h-full items-center justify-center text-center p-2">
+                    {/* Stock Name */}
+                    <h2 className="text-xl font-bold text-foreground tracking-tight leading-tight">
+                        {selectedMeta?.company ?? selectedTicker ?? "—"}
+                    </h2>
+                    <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest mt-0.5 mb-4">
+                        {selectedTicker}
+                    </p>
+
+                    {/* Primary Metric */}
+                    <p className="text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-widest mb-0.5">
+                        {primaryLabel}
+                    </p>
+                    <p className="text-4xl font-black text-foreground tracking-tighter tabular-nums mb-4">
+                        {primaryValue !== undefined ? primaryValue : "—"}
+                    </p>
+
+                    {/* Secondary Metrics Grid */}
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {fields.slice(1, 5).map((field) => {
+                            const value = item.raw
+                                ? field.split(".").reduce((acc: any, k) => acc?.[k], item.raw)
+                                : undefined;
+
+                            const label = field.split(".").pop()?.replace(/_/g, " ");
+
+                            return (
+                                <div
+                                    key={field}
+                                    className="py-2 px-3 rounded-lg bg-muted/30 border border-border/30 text-left"
+                                >
+                                    <p className="text-[8px] font-semibold text-muted-foreground/50 uppercase tracking-widest truncate" title={label}>
+                                        {label}
+                                    </p>
+                                    <p className="text-sm font-bold text-foreground tabular-nums truncate">
+                                        {value !== undefined ? value : "—"}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </WidgetState>
+        );
+    }
+
+    return null;
 }

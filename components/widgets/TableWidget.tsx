@@ -5,6 +5,7 @@ import type { WidgetConfig } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
 import { cachedFetch } from "@/lib/apiCache";
+import { Search, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 type Props = {
   widget: WidgetConfig;
@@ -42,7 +43,7 @@ export default function TableWidget({ widget }: Props) {
     } else if (sortDir === "asc") {
       setSortDir("desc");
     } else {
-      setSortBy(null); // clear sort
+      setSortBy(null);
       setSortDir("asc");
     }
   }
@@ -55,7 +56,6 @@ export default function TableWidget({ widget }: Props) {
     row.company ?? row.name ?? getTicker(row);
 
   const filteredData = data.filter((row) => {
-    // Global search
     const matchesSearch =
       getCompany(row).toLowerCase().includes(search.toLowerCase()) ||
       getTicker(row).toLowerCase().includes(search.toLowerCase()) ||
@@ -97,12 +97,10 @@ export default function TableWidget({ widget }: Props) {
     const aNum = Number(aVal);
     const bNum = Number(bVal);
 
-    // ✅ numeric sort if both are valid numbers
     if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
       return sortDir === "asc" ? aNum - bNum : bNum - aNum;
     }
 
-    // 🔁 fallback to string sort
     return sortDir === "asc"
       ? String(aVal).localeCompare(String(bVal))
       : String(bVal).localeCompare(String(aVal));
@@ -168,29 +166,30 @@ export default function TableWidget({ widget }: Props) {
       error={error}
       empty={!data || data.length === 0}
     >
-      <div className="relative h-full rounded-lg border border-border flex flex-col">
-        <div className="px-3 py-2 border-b border-border bg-card">
+      <div className="relative h-full flex flex-col overflow-hidden">
+        {/* Search Bar */}
+        <div className="mb-3 relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search…"
-            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
+            placeholder="Search companies or tickers..."
+            className="w-full bg-muted/20 border border-border/40 rounded-lg pl-9 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/10 outline-none transition-all"
           />
         </div>
 
-        <div className="flex-1 overflow-auto relative">
-          <table className="min-w-max text-sm border-collapse">
+        <div className="flex-1 overflow-auto rounded-xl border border-border/40 relative bg-card/30">
+          <table className="w-full text-sm border-collapse text-left">
             {/* Header */}
-            <thead className="sticky top-0 z-30 bg-card border-b border-border">
-              {/* Column titles */}
+            <thead className="sticky top-0 z-30 bg-card border-b border-border/50">
               <tr>
                 {/* Company */}
-                <th className="sticky left-0 top-0 z-40 bg-card px-3 py-2">
+                <th className="px-4 py-3.5 font-semibold text-foreground/80 text-xs uppercase tracking-wider sticky left-0 z-40 bg-card">
                   Company
                 </th>
 
                 {/* Ticker */}
-                <th className="px-3 py-2 text-left text-xs font-medium uppercase">
+                <th className="px-4 py-3.5 font-semibold text-foreground/80 text-xs uppercase tracking-wider">
                   Ticker
                 </th>
 
@@ -201,46 +200,22 @@ export default function TableWidget({ widget }: Props) {
                     <th
                       key={field}
                       onClick={() => toggleSort(field)}
-                      className="px-3 py-2 text-left text-xs font-medium uppercase cursor-pointer"
+                      className="px-4 py-3.5 font-semibold text-foreground/80 text-xs uppercase tracking-wider cursor-pointer hover:text-primary transition-colors select-none group"
                     >
-                      {field.split(".").pop()}
-                      {isActive && (sortDir === "asc" ? " ↑" : " ↓")}
+                      <div className="flex items-center gap-1.5">
+                        <span>{field.split(".").pop()?.replace(/_/g, " ")}</span>
+                        <span className={`transition-all ${isActive ? "text-primary" : "text-muted-foreground/30 group-hover:text-muted-foreground/60"}`}>
+                          {isActive ? (
+                            sortDir === "asc" ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+                          ) : (
+                            <ArrowUpDown size={12} />
+                          )}
+                        </span>
+                      </div>
                     </th>
                   );
                 })}
               </tr>
-
-              {/* Column filters */}
-              <tr className="border-t border-border">
-                <th className="sticky left-0 top-0 z-30 bg-card px-2 py-1" />
-                <th className="px-2 py-1" />
-
-                {widget.fields?.map((field) => {
-                  const sampleValue = field
-                    .split(".")
-                    .reduce((acc: any, key) => acc?.[key], data[0]?.raw);
-
-                  const isNumber = typeof sampleValue === "number";
-
-                  return (
-                    <th key={field} className="px-2 py-1">
-                      <input
-                        type={isNumber ? "number" : "text"}
-                        placeholder={isNumber ? "Min" : "Filter"}
-                        value={columnFilters[field] ?? ""}
-                        onChange={(e) =>
-                          setColumnFilters((prev) => ({
-                            ...prev,
-                            [field]: e.target.value,
-                          }))
-                        }
-                        className="w-full rounded-sm bg-background border border-border px-1 py-0.5 text-xs"
-                      />
-                    </th>
-                  );
-                })}
-              </tr>
-
             </thead>
 
 
@@ -249,29 +224,27 @@ export default function TableWidget({ widget }: Props) {
               {paginatedData.map((row, idx) => (
                 <tr
                   key={getTicker(row) ?? idx}
-                  className="odd:bg-background even:bg-background/50 hover:bg-emerald-500/5"
+                  className="group border-b border-border/20 last:border-0 hover:bg-muted/30 transition-colors"
                 >
                   {/* Company (sticky) */}
-                  <td className="sticky left-0 z-20 bg-background px-3 py-2 max-w-[220px] truncate">
+                  <td className="sticky left-0 z-20 bg-card/80 backdrop-blur-sm group-hover:bg-muted/30 px-4 py-3 max-w-[200px] truncate font-medium text-foreground transition-colors">
                     {getCompany(row)}
                   </td>
 
                   {/* Ticker */}
-                  <td className="px-3 py-2 font-mono">
+                  <td className="px-4 py-3 font-mono text-[11px] font-medium text-muted-foreground/70 group-hover:text-primary transition-colors uppercase tracking-wider">
                     {getTicker(row)}
                   </td>
 
                   {/* Metrics */}
                   {widget.fields?.map((field) => {
                     const value = getValue(row, field);
-
                     const isNumber = typeof value === "number";
 
                     return (
                       <td
                         key={field}
-                        className={`px-3 py-2 ${isNumber ? "text-right tabular-nums" : ""
-                          }`}
+                        className={`px-4 py-3 ${isNumber ? "tabular-nums font-medium" : ""} text-foreground/70 group-hover:text-foreground transition-colors`}
                       >
                         {value ?? "—"}
                       </td>
@@ -282,32 +255,59 @@ export default function TableWidget({ widget }: Props) {
             </tbody>
 
           </table>
-          <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-card">
-            <span className="text-xs text-muted">
-              Page {page + 1} of {totalPages || 1}
-            </span>
+        </div>
 
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(p - 1, 0))}
-                disabled={page === 0}
-                className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
-              >
-                Prev
-              </button>
+        {/* Pagination */}
+        <div className="flex items-center justify-between mt-3">
+          <p className="text-xs text-muted-foreground/60">
+            Showing <span className="font-medium text-foreground">{page * PAGE_SIZE + 1}</span>-<span className="font-medium text-foreground">{Math.min((page + 1) * PAGE_SIZE, sortedData.length)}</span> of <span className="font-medium text-foreground">{sortedData.length}</span>
+          </p>
 
-              <button
-                onClick={() =>
-                  setPage((p) => Math.min(p + 1, totalPages - 1))
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setPage((p) => Math.max(p - 1, 0))}
+              disabled={page === 0}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            <div className="flex items-center gap-0.5 px-2">
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let pageNum = i;
+                if (totalPages > 5) {
+                  if (page < 3) {
+                    pageNum = i;
+                  } else if (page > totalPages - 4) {
+                    pageNum = totalPages - 5 + i;
+                  } else {
+                    pageNum = page - 2 + i;
+                  }
                 }
-                disabled={page >= totalPages - 1}
-                className="px-2 py-1 text-xs rounded-md border border-border disabled:opacity-40"
-              >
-                Next
-              </button>
-            </div>
-          </div>
 
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setPage(pageNum)}
+                    className={`w-7 h-7 rounded-md text-xs font-medium transition-colors ${page === pageNum
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      }`}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setPage((p) => Math.min(p + 1, totalPages - 1))}
+              disabled={page >= totalPages - 1}
+              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
       </div>
     </WidgetState>
