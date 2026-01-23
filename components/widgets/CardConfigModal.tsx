@@ -28,22 +28,23 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
     widget.card?.primaryTicker
   );
 
-
+  const [title, setTitle] = useState(widget.title);
 
   useEffect(() => {
+    setTitle(widget.title);
     setVariant(widget.card?.variant ?? "financial");
     setWatchlist(widget.card?.watchlistTickers ?? []);
     setSelectedFields(widget.fields ?? []);
     setPrimaryTicker(widget.card?.primaryTicker);
-  }, [widget]);
+  }, [widget, open]);
+
 
   if (!open || widget.type !== "card") return null;
 
   function save() {
     updateWidget(widget.id, (w) => ({
       ...w,
-
-      // ✅ Only update fields for FINANCIAL cards
+      title,
       fields:
         variant === "financial"
           ? selectedFields
@@ -86,17 +87,6 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
     (variant === "performance" &&
       !primaryTicker);
 
-
-
-  console.log("CARD CONFIG MODAL DEBUG", {
-    variant,
-    widgetCard: widget.card,
-    availableTickers: widget.card?.availableTickers,
-    watchlistTickers: widget.card?.watchlistTickers,
-  });
-
-
-
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -109,6 +99,19 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
             <X size={14} />
           </button>
         </div>
+
+        {/* Title */}
+        <div className="mb-4">
+          <label className="block text-sm font-medium mb-1">
+            Title
+          </label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full rounded-md px-3 py-2 bg-background border border-border"
+          />
+        </div>
+
 
         {/* Variant selector */}
         <div className="mb-4 space-y-2">

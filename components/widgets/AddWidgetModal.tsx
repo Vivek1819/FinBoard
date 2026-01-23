@@ -110,6 +110,18 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             ? normalizeApiResponse(apiUrl, apiResponse)
             : { rows: [], tickers: [] };
 
+    const stockOptions =
+        cardVariant === "performance" || cardVariant === "financial"
+            ? isFinnhub
+                ? FINNHUB_POPULAR
+                : apiUrl.includes("coingecko")
+                    ? normalized.tickers
+                    : apiUrl.includes("indian")
+                        ? normalized.tickers
+                        : []
+            : [];
+
+
     const allTickers = isFinnhub ? FINNHUB_POPULAR : normalized.tickers;
 
     useEffect(() => {
@@ -496,11 +508,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         )}
 
                     {type === "card" &&
-                        cardVariant === "performance" &&
+                        (cardVariant === "performance" || cardVariant === "financial") &&
                         testStatus === "success" &&
-                        isFinnhub &&
-                        allTickers.length > 0
-                        && (
+                        stockOptions.length > 0 && (
                             <div className="space-y-2">
                                 <label className="block text-sm font-medium">
                                     Select stock
@@ -511,8 +521,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     onChange={(e) => setPrimaryTicker(e.target.value)}
                                     className="w-full rounded-md px-3 py-2 bg-background border border-border"
                                 >
-                                    <option value="">Select Stock</option>
-                                    {allTickers.map(({ ticker, company }) => (
+                                    <option value="">Select stock</option>
+                                    {stockOptions.map(({ ticker, company }) => (
                                         <option key={ticker} value={ticker}>
                                             {company} ({ticker})
                                         </option>
@@ -520,6 +530,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 </select>
                             </div>
                         )}
+
 
                     {/* Refresh */}
                     <div>

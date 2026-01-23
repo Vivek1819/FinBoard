@@ -14,10 +14,12 @@ type Props = {
 };
 
 export default function ChartConfigModal({ open, onClose, widget }: Props) {
+
+  const [title, setTitle] = useState(widget.title);
+
   const updateWidget = useDashboardStore((s) => s.updateWidget);
 
 
-  // ✅ Hooks must ALWAYS be called
   const [symbol, setSymbol] = useState("IBM");
   const [interval, setInterval] = useState<ChartInterval>("daily");
   const [variant, setVariant] = useState<ChartVariant>("line");
@@ -33,9 +35,10 @@ export default function ChartConfigModal({ open, onClose, widget }: Props) {
     }
   }
 
-
   useEffect(() => {
     if (!open || widget.type !== "chart" || !widget.chart) return;
+
+    setTitle(widget.title);
 
     const match = widget.api?.url?.match(/symbol=([^&]+)/);
     setSymbol(match?.[1] ?? "IBM");
@@ -44,12 +47,12 @@ export default function ChartConfigModal({ open, onClose, widget }: Props) {
     setVariant(widget.chart.variant);
   }, [open, widget]);
 
-  // ✅ Early return ONLY after hooks
   if (!open || widget.type !== "chart" || !widget.chart) return null;
 
   function onSave() {
     updateWidget(widget.id, (w) => ({
       ...w,
+      title,
       chart: {
         ...w.chart!,
         interval,
@@ -79,6 +82,17 @@ export default function ChartConfigModal({ open, onClose, widget }: Props) {
             <X size={14} />
           </button>
         </div>
+
+        {/* Title */}
+        <div className="mb-3">
+          <label className="block text-xs mb-1">Title</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full rounded-md bg-background border border-border px-2 py-1 text-sm"
+          />
+        </div>
+
 
         {/* Symbol */}
         <div className="mb-3">
