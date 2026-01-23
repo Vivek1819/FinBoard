@@ -2,6 +2,7 @@
 
 import { X, ChevronDown, Check } from "lucide-react";
 import { createPortal } from "react-dom";
+import { FORMAT_OPTIONS } from "@/lib/formatter";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { WidgetConfig, CardVariant } from "@/types/widget";
 import { useEffect, useState, useRef } from "react";
@@ -138,6 +139,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
   );
 
   const [title, setTitle] = useState(widget.title);
+  const [fieldFormats, setFieldFormats] = useState(widget.fieldFormats ?? {});
 
   useEffect(() => {
     setTitle(widget.title);
@@ -145,6 +147,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
     setWatchlist(widget.card?.watchlistTickers ?? []);
     setSelectedFields(widget.fields ?? []);
     setPrimaryTicker(widget.card?.primaryTicker);
+    setFieldFormats(widget.fieldFormats ?? {});
   }, [widget, open]);
 
 
@@ -154,6 +157,7 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
     updateWidget(widget.id, (w) => ({
       ...w,
       title,
+      fieldFormats,
       fields:
         variant === "financial"
           ? selectedFields
@@ -316,6 +320,29 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
                 selected={selectedFields}
                 onChange={setSelectedFields}
               />
+
+              {selectedFields.length > 0 && (
+                <div className="mt-4 space-y-3">
+                  <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                    Data Formatting
+                  </label>
+                  <div className="space-y-2">
+                    {selectedFields.map(field => (
+                      <div key={field} className="flex flex-col gap-1">
+                        <span className="text-xs text-muted-foreground/80 font-medium ml-1">
+                          {field.split(".").pop()?.replace(/_/g, " ")}
+                        </span>
+                        <CustomSelect
+                          value={fieldFormats[field] ?? "default"}
+                          onChange={(val) => setFieldFormats(prev => ({ ...prev, [field]: val }))}
+                          options={FORMAT_OPTIONS}
+                          placeholder="Select format..."
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

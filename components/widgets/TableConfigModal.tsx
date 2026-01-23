@@ -1,11 +1,120 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, ChevronDown, Check } from "lucide-react";
 import { WidgetConfig } from "@/types/widget";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import { createPortal } from "react-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import FieldSelector from "../field-selector/FieldSelector";
+import { FORMAT_OPTIONS } from "@/lib/formatter";
+
+// Custom Select Component (Reusable)
+function CustomSelect({
+    value,
+    onChange,
+    options,
+    placeholder = "Select..."
+}: {
+    value: string;
+    onChange: (val: string) => void;
+    options: { value: string; label: string; sublabel?: string }[];
+    placeholder?: string;
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+    const ref = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            const target = e.target as Node;
+            const isOutsideButton = ref.current && !ref.current.contains(target);
+            const isOutsideDropdown = !dropdownRef.current || !dropdownRef.current.contains(target);
+
+            if (isOutsideButton && isOutsideDropdown) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        if (isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            setPosition({
+                top: rect.bottom + 4,
+                left: rect.left,
+                width: rect.width
+            });
+        }
+    }, [isOpen]);
+
+    const selected = options.find(o => o.value === value);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                ref={buttonRef}
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-muted/30 border border-border/50 hover:border-border hover:bg-muted/50 transition-all text-left"
+            >
+                <div className="flex-1 min-w-0">
+                    {selected ? (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-foreground truncate">{selected.label}</span>
+                            {selected.sublabel && (
+                                <span className="text-xs text-muted-foreground/60 font-mono">{selected.sublabel}</span>
+                            )}
+                        </div>
+                    ) : (
+                        <span className="text-sm text-muted-foreground">{placeholder}</span>
+                    )}
+                </div>
+                <ChevronDown size={14} className={`text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    className="fixed py-1 bg-popover border border-border/50 rounded-xl shadow-xl max-h-60 overflow-auto custom-scrollbar"
+                    style={{
+                        top: position.top,
+                        left: position.left,
+                        width: position.width,
+                        zIndex: 9999
+                    }}
+                >
+                    {options.map((option) => (
+                        <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => {
+                                onChange(option.value);
+                                setIsOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${value === option.value ? "bg-primary/5" : ""
+                                }`}
+                        >
+                            <div className="flex items-center gap-2 min-w-0">
+                                <span className={`text-sm truncate ${value === option.value ? "font-semibold text-primary" : "text-foreground"}`}>
+                                    {option.label}
+                                </span>
+                                {option.sublabel && (
+                                    <span className="text-[10px] text-muted-foreground/50 font-mono uppercase tracking-wider">{option.sublabel}</span>
+                                )}
+                            </div>
+                            {value === option.value && <Check size={14} className="text-primary flex-shrink-0" />}
+                        </button>
+                    ))}
+                </div>,
+                document.body
+            )}
+        </div>
+    );
+}
 
 type Props = {
     open: boolean;
@@ -20,11 +129,13 @@ export default function TableConfigModal({ open, onClose, widget }: Props) {
     const [selectedFields, setSelectedFields] = useState<string[]>(
         widget.fields ?? []
     );
+    const [fieldFormats, setFieldFormats] = useState(widget.fieldFormats ?? {});
 
     useEffect(() => {
         if (!open) return;
         setTitle(widget.title);
         setSelectedFields(widget.fields ?? []);
+        setFieldFormats(widget.fieldFormats ?? {});
     }, [open, widget]);
 
     if (!open || widget.type !== "table" || !widget.availableFields) {
@@ -36,6 +147,7 @@ export default function TableConfigModal({ open, onClose, widget }: Props) {
             ...w,
             title,
             fields: selectedFields,
+            fieldFormats,
         }));
         onClose();
     }
@@ -84,6 +196,30 @@ export default function TableConfigModal({ open, onClose, widget }: Props) {
                             selected={selectedFields}
                             onChange={setSelectedFields}
                         />
+
+                        {/* Formatting */}
+                        {selectedFields.length > 0 && (
+                            <div className="mt-4 space-y-3">
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                                    Data Formatting
+                                </label>
+                                <div className="space-y-2">
+                                    {selectedFields.map(field => (
+                                        <div key={field} className="flex flex-col gap-1">
+                                            <span className="text-xs text-muted-foreground/80 font-medium ml-1">
+                                                {field.split(".").pop()?.replace(/_/g, " ")}
+                                            </span>
+                                            <CustomSelect
+                                                value={fieldFormats[field] ?? "default"}
+                                                onChange={(val) => setFieldFormats(prev => ({ ...prev, [field]: val }))}
+                                                options={FORMAT_OPTIONS}
+                                                placeholder="Select format..."
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

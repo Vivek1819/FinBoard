@@ -24,7 +24,6 @@ export default function AppHeader() {
                             FinBoard
                         </h1>
                         <div className="flex items-center gap-1.5 mt-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider leading-none">
                                 Financial Dashboard
                             </p>

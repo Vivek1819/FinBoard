@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
+import { formatValue } from "@/lib/formatter";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
 import { cachedFetch } from "@/lib/apiCache";
@@ -249,7 +250,7 @@ export default function TableWidget({ widget }: Props) {
                         key={field}
                         className={`px-4 py-3 ${isNumber ? "tabular-nums font-medium" : ""} text-foreground/70 group-hover:text-foreground transition-colors`}
                       >
-                        {value ?? "—"}
+                        {formatValue(value, widget.fieldFormats?.[field])}
                       </td>
                     );
                   })}

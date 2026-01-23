@@ -41,6 +41,8 @@ export type WidgetConfig = {
     interval: ChartInterval;
     variant: ChartVariant;
   };
+
+  fieldFormats?: Record<string, string>;
 };
 
-export {};
+export { };

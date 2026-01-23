@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { WidgetConfig } from "@/types/widget";
+import { formatValue } from "@/lib/formatter";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import WidgetState from "./WidgetState";
 import { cachedFetch } from "@/lib/apiCache";
@@ -283,7 +284,7 @@ export default function CardWidget({ widget }: Props) {
                         {primaryLabel}
                     </p>
                     <p className="text-4xl font-black text-foreground tracking-tighter tabular-nums mb-4">
-                        {primaryValue !== undefined ? primaryValue : "—"}
+                        {formatValue(primaryValue, widget.fieldFormats?.[primaryField])}
                     </p>
 
                     {/* Secondary Metrics Grid */}
@@ -304,7 +305,7 @@ export default function CardWidget({ widget }: Props) {
                                         {label}
                                     </p>
                                     <p className="text-sm font-bold text-foreground tabular-nums truncate">
-                                        {value !== undefined ? value : "—"}
+                                        {formatValue(value, widget.fieldFormats?.[field])}
                                     </p>
                                 </div>
                             );
