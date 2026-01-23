@@ -35,8 +35,8 @@ export default function CustomSelect({
         if (open && triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect();
             setCoords({
-                top: rect.bottom + window.scrollY + 4, // 4px gap
-                left: rect.left + window.scrollX,
+                top: rect.bottom + 4, // 4px gap
+                left: rect.left,
                 width: rect.width,
             });
         }
@@ -64,14 +64,16 @@ export default function CustomSelect({
             <button
                 ref={triggerRef}
                 type="button"
-                className={`relative w-full rounded-lg px-3 py-2 text-left text-sm border transition-all outline-none focus:ring-2 focus:ring-primary/20 bg-background border-border flex items-center justify-between ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"
+                className={`relative w-full rounded-xl px-3 py-2.5 text-left text-sm border transition-all outline-none bg-muted/30 border-border/50 flex items-center justify-between ${disabled
+                    ? "opacity-50 cursor-not-allowed bg-muted/10"
+                    : "hover:bg-muted/50 hover:border-border focus:bg-background focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
                     } ${className}`}
                 onClick={() => !disabled && setOpen(!open)}
             >
-                <span className={selectedOption ? "text-foreground" : "text-muted-foreground"}>
+                <span className={`block truncate ${selectedOption ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                     {selectedOption ? selectedOption.label : placeholder}
                 </span>
-                <ChevronDown size={16} className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+                <ChevronDown size={14} className={`text-muted-foreground/70 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
             </button>
 
             {open && coords && createPortal(
@@ -84,7 +86,7 @@ export default function CustomSelect({
 
                     {/* Dropdown Menu */}
                     <div
-                        className="fixed z-[10000] max-h-60 overflow-auto rounded-lg border border-border bg-popover text-popover-foreground shadow-xl animate-in fade-in zoom-in-95 duration-100 flex flex-col p-1 custom-scrollbar"
+                        className="fixed z-[10000] max-h-60 overflow-auto rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col p-1.5 custom-scrollbar ring-1 ring-border/20"
                         style={{
                             top: coords.top,
                             left: coords.left,
@@ -92,8 +94,8 @@ export default function CustomSelect({
                         }}
                     >
                         {options.length === 0 ? (
-                            <div className="px-2 py-2 text-sm text-muted-foreground text-center">
-                                No options
+                            <div className="px-2 py-3 text-xs text-muted-foreground text-center italic">
+                                No options available
                             </div>
                         ) : (
                             options.map((option) => (
@@ -104,20 +106,22 @@ export default function CustomSelect({
                                         onChange(option.value);
                                         setOpen(false);
                                     }}
-                                    className={`relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-2 pr-8 text-sm outline-none hover:bg-accent hover:text-accent-foreground ${option.value === value ? "bg-accent text-accent-foreground font-medium" : ""
+                                    className={`relative flex w-full cursor-pointer select-none items-center rounded-lg py-2 pl-2.5 pr-8 text-sm outline-none transition-colors ${option.value === value
+                                        ? "bg-primary/10 text-primary font-semibold"
+                                        : "hover:bg-muted/80 text-foreground"
                                         }`}
                                 >
                                     <span className="truncate">{option.label}</span>
                                     {option.value === value && (
-                                        <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-                                            <Check size={14} />
+                                        <span className="absolute right-2.5 flex items-center justify-center text-primary">
+                                            <Check size={14} strokeWidth={2.5} />
                                         </span>
                                     )}
                                 </button>
                             ))
                         )}
                     </div>
-                </  >,
+                </>,
                 document.body
             )}
         </>

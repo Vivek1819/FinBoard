@@ -244,58 +244,67 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 }}
             />
 
-
-            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card border border-border shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="relative z-10 w-full max-w-lg rounded-2xl bg-card border border-border/50 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                    <h2 className="text-lg font-semibold tracking-tight">Create Widget</h2>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/5">
+                    <div>
+                        <h2 className="text-lg font-semibold tracking-tight text-foreground">Create Widget</h2>
+                        <p className="text-xs text-muted-foreground/60 mt-0.5">Add a new data block to your dashboard</p>
+                    </div>
                     <button
                         onClick={() => {
                             resetForm();
                             onClose();
                         }}
-                        className="text-muted-foreground hover:text-foreground transition-colors"
+                        className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                     >
                         <X size={18} />
                     </button>
-
                 </div>
 
                 {/* Body */}
-                <div className="px-6 py-5 space-y-6 overflow-y-auto custom-scrollbar">
+                <div className="px-6 py-6 space-y-6 overflow-y-auto custom-scrollbar bg-card/50">
+
                     {/* Title */}
                     <div>
-                        <label className="block text-sm font-medium mb-1.5 text-foreground">Widget name</label>
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            Widget Name
+                        </label>
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full rounded-lg px-3 py-2 bg-background border border-border focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            placeholder="My Widget"
+                            className="w-full rounded-xl px-4 py-2.5 bg-muted/30 border border-border/50 focus:border-primary/50 focus:bg-background focus:ring-2 focus:ring-primary/10 outline-none transition-all text-sm placeholder:text-muted-foreground/40"
+                            placeholder="e.g., Portfolio Overview"
                         />
                     </div>
+
                     {/* Type */}
                     <div>
-                        <label className="block text-sm font-medium mb-2 text-foreground">Display type</label>
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            Widget Type
+                        </label>
                         <div className="flex gap-2">
                             {(["card", "table", "chart"] as WidgetType[]).map((t) => (
                                 <button
                                     key={t}
                                     onClick={() => setType(t)}
-                                    className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${type === t
-                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                        : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    className={`flex-1 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${type === t
+                                        ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                                        : "bg-muted/30 text-muted-foreground hover:bg-muted/50 hover:text-foreground border border-transparent hover:border-border/50"
                                         }`}
                                 >
-                                    {t.toUpperCase()}
+                                    {t.charAt(0).toUpperCase() + t.slice(1)}
                                 </button>
                             ))}
                         </div>
                     </div>
 
                     {type === "card" && (
-                        <div>
-                            <label className="block text-sm font-medium mb-2 text-foreground">Card type</label>
+                        <div className="animate-in slide-in-from-top-2 duration-300">
+                            <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                                Card Style
+                            </label>
                             <div className="grid grid-cols-2 gap-2">
                                 {[
                                     ["watchlist", "Watchlist"],
@@ -306,9 +315,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     <button
                                         key={value}
                                         onClick={() => setCardVariant(value as any)}
-                                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-all border ${cardVariant === value
-                                            ? "border-primary bg-primary/5 text-primary"
-                                            : "border-border bg-background hover:bg-muted/50"
+                                        className={`px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left border ${cardVariant === value
+                                            ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
+                                            : "border-border/50 bg-muted/20 text-muted-foreground hover:text-foreground hover:border-border hover:bg-muted/40"
                                             }`}
                                     >
                                         {label}
@@ -320,9 +329,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
 
                     {/* API Provider */}
-                    <div>
-                        <label className="block text-sm font-medium mb-2 text-foreground">
-                            API Provider (optional)
+                    <div className="space-y-2">
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                            Data Source <span className="text-muted-foreground/40 font-normal normal-case ml-1">(Optional Preset)</span>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             {Object.entries(API_PRESETS).map(([name, url]) => {
@@ -341,13 +350,14 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                             setFields([]);
                                             setSelectedFields([]);
                                         }}
-                                        className={`rounded-lg px-3 py-2 text-sm text-left border transition-all ${isDisabled
-                                            ? "opacity-40 cursor-not-allowed bg-muted/20"
-                                            : "bg-background border-border hover:border-primary/50 hover:bg-primary/5"
+                                        className={`rounded-xl px-3 py-2.5 text-sm text-left border transition-all ${isDisabled
+                                            ? "opacity-40 cursor-not-allowed bg-muted/10 border-transparent"
+                                            : apiUrl === url
+                                                ? "bg-primary/5 border-primary text-primary ring-1 ring-primary/20"
+                                                : "bg-muted/20 border-border/50 hover:border-primary/50 hover:bg-muted/40"
                                             }`}
                                     >
                                         {name}
-
                                     </button>
                                 );
                             })}
@@ -356,48 +366,65 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
 
                     {/* API URL */}
                     <div>
-                        <label className="block text-sm font-medium mb-1.5 text-foreground">API Endpoint</label>
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            API Endpoint
+                        </label>
                         <div className="flex gap-2">
-                            <input
-                                value={apiUrl}
-                                onChange={(e) => {
-                                    setApiUrl(e.target.value);
-                                    setTestStatus("idle");
-                                    setFields([]);
-                                    setSelectedFields([]);
-                                }}
-                                className="flex-1 rounded-lg px-3 py-2 bg-background border border-border focus:ring-2 focus:ring-primary/20 outline-none"
-                                placeholder="https://api.example.com..."
-                            />
+                            <div className="relative flex-1 group">
+                                <div className={`absolute inset-0 rounded-xl transition-all duration-300 pointer-events-none opacity-0 group-focus-within:opacity-100 ring-2 ring-primary/10 ${testStatus === "success" ? "ring-emerald-500/20" : testStatus === "error" ? "ring-destructive/20" : ""
+                                    }`} />
+                                <input
+                                    value={apiUrl}
+                                    onChange={(e) => {
+                                        setApiUrl(e.target.value);
+                                        setTestStatus("idle");
+                                        setFields([]);
+                                        setSelectedFields([]);
+                                    }}
+                                    className={`w-full rounded-xl px-4 py-2.5 bg-muted/30 border focus:bg-background outline-none transition-all text-sm placeholder:text-muted-foreground/40 ${testStatus === "success" ? "border-emerald-500/50" :
+                                            testStatus === "error" ? "border-destructive/50" :
+                                                "border-border/50 focus:border-primary/50"
+                                        }`}
+                                    placeholder="https://api.example.com/v1/data..."
+                                />
+                            </div>
                             <button
                                 onClick={testApi}
                                 disabled={!apiUrl || isTesting}
-                                className="px-4 py-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-secondary/80 font-medium transition-colors disabled:opacity-50"
+                                className={`px-5 py-2.5 rounded-xl font-medium text-sm transition-all shadow-sm active:scale-95 disabled:opacity-50 disabled:pointer-events-none ${testStatus === "success"
+                                        ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20"
+                                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
+                                    }`}
                             >
-                                {isTesting ? "Testing…" : "Test"}
+                                {isTesting ? (
+                                    <span className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                                        Testing
+                                    </span>
+                                ) : testStatus === "success" ? "Verified" : "Connect"}
                             </button>
                         </div>
 
                         {testStatus === "success" && (
-                            <div className="mt-2 text-xs font-medium text-emerald-500 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                API connection successful
+                            <div className="mt-2.5 flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 text-emerald-600 text-xs font-medium rounded-lg w-fit animate-in fade-in slide-in-from-top-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                Connection successful
                             </div>
                         )}
                         {testStatus === "error" && (
-                            <div className={`mt-2 text-xs font-medium flex items-center gap-1.5 ${errorMessage.toLowerCase().includes("rate limit") || errorMessage.includes("429")
-                                    ? "text-amber-500"
-                                    : "text-destructive"
+                            <div className={`mt-2.5 flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg w-full animate-in fade-in slide-in-from-top-1 ${errorMessage.toLowerCase().includes("rate limit")
+                                    ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                    : "bg-destructive/10 text-destructive"
                                 }`}>
-                                {errorMessage.toLowerCase().includes("rate limit") || errorMessage.includes("429") ? (
+                                {errorMessage.toLowerCase().includes("rate limit") ? (
                                     <>
-                                        <Zap size={12} />
-                                        <span>API rate limit reached. Please wait and try again.</span>
+                                        <Zap size={14} className="flex-shrink-0" />
+                                        <span>Rate limit reached. Please wait a moment.</span>
                                     </>
                                 ) : (
                                     <>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                                        {errorMessage}
+                                        <div className="w-1.5 h-1.5 rounded-full bg-destructive flex-shrink-0" />
+                                        <span className="truncate">{errorMessage}</span>
                                     </>
                                 )}
                             </div>
@@ -405,45 +432,49 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                     </div>
 
                     {type === "chart" && (
-                        <div className="space-y-4">
+                        <div className="space-y-5 animate-in slide-in-from-top-2 duration-300">
                             {/* Chart Type */}
                             <div>
-                                <label className="block text-sm font-medium mb-2 text-foreground">Chart type</label>
-                                <div className="flex gap-2">
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                                    Visualization Style
+                                </label>
+                                <div className="flex gap-2 p-1 bg-muted/30 rounded-xl border border-border/50">
                                     {["line", "candle"].map((v) => (
                                         <button
                                             key={v}
                                             onClick={() => setChartVariant(v as any)}
-                                            className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-all ${chartVariant === v
-                                                ? "bg-primary text-primary-foreground shadow-sm"
-                                                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                            className={`flex-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${chartVariant === v
+                                                ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                                                : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                         >
-                                            {v.toUpperCase()}
+                                            {v.charAt(0).toUpperCase() + v.slice(1)}
                                         </button>
                                     ))}
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label className="block text-sm font-medium text-foreground">
-                                    Select stock
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider">
+                                    Asset
                                 </label>
                                 <CustomSelect
                                     value={chartTicker}
                                     onChange={setChartTicker}
                                     options={ALPHA_VANTAGE_SYMBOLS.map(s => ({
                                         value: s.ticker,
-                                        label: `${s.company} (${s.ticker})`
+                                        label: s.company,
+                                        sublabel: s.ticker
                                     }))}
+                                    placeholder="Select asset..."
                                 />
                             </div>
 
-
-
                             {/* Interval */}
                             <div>
-                                <label className="block text-sm font-medium mb-1.5 text-foreground">Interval</label>
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                                    Time Interval
+                                </label>
                                 <CustomSelect
                                     value={chartInterval}
                                     onChange={(v) => setChartInterval(v as any)}
@@ -463,9 +494,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         (type === "table" ||
                             (type === "card" && cardVariant === "financial")) && (
 
-                            <div className="space-y-3">
-                                <label className="block text-sm font-medium text-foreground">
-                                    Select fields
+                            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-1">
+                                    Available Data Fields
                                 </label>
 
                                 <FieldSelector
@@ -483,17 +514,29 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         cardVariant === "watchlist" &&
                         testStatus === "success" &&
                         allTickers.length > 0 && (
-                            <div className="space-y-3">
-                                <label className="block text-sm font-medium text-foreground">
-                                    Select watchlist items
+                            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                                    Select Watchlist Items
                                 </label>
 
-                                <div className="max-h-48 overflow-auto rounded-lg border border-border p-2 space-y-1 custom-scrollbar">
+                                <div className="max-h-48 overflow-auto rounded-xl border border-border/50 bg-muted/20 p-1.5 space-y-0.5 custom-scrollbar">
                                     {allTickers.map(({ ticker, company }, index) => {
                                         const selected = watchlistTickers.includes(ticker);
 
                                         return (
-                                            <label key={`${ticker}-${index}`} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
+                                            <label
+                                                key={`${ticker}-${index}`}
+                                                className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selected ? "bg-primary/5" : "hover:bg-muted/50"
+                                                    }`}
+                                            >
+                                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${selected ? "bg-primary border-primary" : "border-border bg-background"
+                                                    }`}>
+                                                    {selected && <div className="w-1.5 h-1.5 bg-primary-foreground rounded-full" />}
+                                                </div>
+                                                <div className="flex flex-col min-w-0">
+                                                    <span className="text-sm font-medium leading-none">{company}</span>
+                                                    <span className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{ticker}</span>
+                                                </div>
                                                 <input
                                                     type="checkbox"
                                                     checked={selected}
@@ -504,10 +547,8 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                                                 : [...prev, ticker]
                                                         )
                                                     }
-                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
+                                                    className="sr-only"
                                                 />
-                                                <span className="font-medium">{ticker}</span>
-                                                <span className="text-muted-foreground text-xs truncate">{company}</span>
                                             </label>
                                         );
                                     })}
@@ -519,28 +560,31 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                         (cardVariant === "performance" || cardVariant === "financial") &&
                         testStatus === "success" &&
                         stockOptions.length > 0 && (
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-foreground">
-                                    Select stock
+                            <div className="space-y-2 animate-in slide-in-from-top-2 duration-300">
+                                <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                                    Select Stock
                                 </label>
                                 <CustomSelect
                                     value={primaryTicker ?? ""}
                                     onChange={setPrimaryTicker}
                                     options={[
-                                        { value: "", label: "Select stock" },
                                         ...stockOptions.map(({ ticker, company }) => ({
                                             value: ticker,
-                                            label: `${company} (${ticker})`
+                                            label: company,
+                                            sublabel: ticker
                                         }))
                                     ]}
+                                    placeholder="Select a stock..."
                                 />
                             </div>
                         )}
 
 
                     {/* Refresh */}
-                    <div>
-                        <label className="block text-sm font-medium mb-1.5 text-foreground">Refresh interval</label>
+                    <div className="pt-2 border-t border-border/40">
+                        <label className="block text-xs font-semibold text-muted-foreground/70 uppercase tracking-wider mb-2">
+                            Refresh Rate
+                        </label>
                         <CustomSelect
                             value={String(refreshInterval)}
                             onChange={(v) => setRefreshInterval(Number(v))}
@@ -555,10 +599,10 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-border bg-muted/20 rounded-b-2xl">
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border/50 bg-muted/5">
                     <button
                         onClick={onClose}
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                        className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                     >
                         Cancel
                     </button>
@@ -576,9 +620,9 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                 cardVariant === "watchlist" &&
                                 watchlistTickers.length === 0)
                         }
-                        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
+                        className="px-6 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:shadow-none disabled:pointer-events-none"
                     >
-                        Add Widget
+                        Create Widget
                     </button>
                 </div>
             </div>

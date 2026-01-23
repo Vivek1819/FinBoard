@@ -101,8 +101,8 @@ export default function FieldSelector({
       type="button"
       onClick={onChange}
       className={`flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center transition-all ${checked || indeterminate
-          ? "bg-primary border-primary text-primary-foreground"
-          : "border-border hover:border-primary/50 bg-background"
+        ? "bg-primary border-primary text-primary-foreground"
+        : "border-border hover:border-primary/50 bg-background"
         }`}
     >
       {checked && <Check size={10} strokeWidth={3} />}
@@ -119,9 +119,11 @@ export default function FieldSelector({
     return (
       <div key={node.path}>
         <div
-          className={`group flex items-center gap-2 py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors cursor-pointer ${checked ? "bg-primary/5" : ""
+          className={`group flex items-center gap-2 py-1.5 px-2.5 rounded-lg transition-all cursor-pointer ${checked
+              ? "bg-primary/10 text-primary"
+              : "hover:bg-muted/70 text-foreground/80 hover:text-foreground"
             }`}
-          style={{ paddingLeft: depth * 16 + 8 }}
+          style={{ paddingLeft: depth * 16 + 10 }}
           onClick={() => {
             const paths = collectLeafPaths(node);
             onChange(
@@ -139,7 +141,7 @@ export default function FieldSelector({
                 e.stopPropagation();
                 toggleCollapse(node.path);
               }}
-              className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="flex-shrink-0 w-4 h-4 flex items-center justify-center text-muted-foreground/70 hover:text-foreground transition-colors"
             >
               {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -164,11 +166,11 @@ export default function FieldSelector({
 
           {/* Label */}
           <span
-            className={`text-sm select-none ${!isLeaf
-                ? "font-semibold text-foreground"
-                : checked
-                  ? "text-foreground font-medium"
-                  : "text-foreground/80"
+            className={`text-sm select-none truncate ${!isLeaf
+              ? "font-semibold tracking-tight"
+              : checked
+                ? "font-medium"
+                : ""
               }`}
           >
             {label.replace(/_/g, " ")}
@@ -176,7 +178,7 @@ export default function FieldSelector({
 
           {/* Sample value badge */}
           {isLeaf && node.sample !== undefined && (
-            <span className="ml-auto text-[10px] text-muted-foreground/60 bg-muted/50 px-1.5 py-0.5 rounded truncate max-w-[120px] font-mono">
+            <span className="ml-auto text-[10px] text-muted-foreground/70 bg-background/50 border border-border/50 px-1.5 py-0.5 rounded-md truncate max-w-[100px] font-mono shadow-sm">
               {String(node.sample)}
             </span>
           )}
@@ -184,7 +186,7 @@ export default function FieldSelector({
 
         {/* Children */}
         {!isLeaf && !isCollapsed && (
-          <div className="border-l border-border/50 ml-[23px]">
+          <div className="border-l border-border/40 ml-[25px] mt-0.5 mb-1 pl-1">
             {node.children!.map((c) => renderNode(c, depth + 1))}
           </div>
         )}
@@ -193,7 +195,7 @@ export default function FieldSelector({
   }
 
   return (
-    <div className="max-h-56 overflow-auto rounded-lg border border-border bg-background/50 p-1.5 space-y-0.5 custom-scrollbar">
+    <div className="max-h-60 overflow-auto rounded-xl border border-border/50 bg-muted/20 p-2 space-y-0.5 custom-scrollbar">
       {tree.map((n) => renderNode(n))}
     </div>
   );
