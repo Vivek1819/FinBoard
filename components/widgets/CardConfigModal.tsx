@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useDashboardStore } from "@/store/useDashboardStore";
 import type { WidgetConfig, CardVariant } from "@/types/widget";
 import { useEffect, useState } from "react";
+import FieldSelector from "@/components/field-selector/FieldSelector";
 
 type Props = {
   open: boolean;
@@ -202,34 +203,11 @@ export default function CardConfigModal({ open, onClose, widget }: Props) {
               <label className="block text-sm font-medium">
                 Select fields to display
               </label>
-
-              <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                {widget.availableFields.map((field) => {
-                  const checked = selectedFields.includes(field);
-
-                  return (
-                    <label
-                      key={field}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          setSelectedFields((prev) =>
-                            checked
-                              ? prev.filter((f) => f !== field)
-                              : [...prev, field]
-                          )
-                        }
-                      />
-                      <span className="truncate">
-                        {field.split(".").pop()}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <FieldSelector
+                fields={widget.availableFields.map(path => ({ path }))}
+                selected={selectedFields}
+                onChange={setSelectedFields}
+              />
             </div>
           )}
 

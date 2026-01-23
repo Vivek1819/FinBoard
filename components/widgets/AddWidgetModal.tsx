@@ -10,6 +10,7 @@ import type { WidgetType } from "@/types/widget";
 import { normalizeApiResponse } from "@/lib/normalizeApiResponse";
 import { FINNHUB_POPULAR } from "@/lib/finnhubPopular";
 import { ALPHA_VANTAGE_SYMBOLS } from "@/lib/alphaVantageSymbols";
+import FieldSelector from "@/components/field-selector/FieldSelector";
 
 type AddWidgetModalProps = {
     open: boolean;
@@ -449,29 +450,16 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
                                     Select fields
                                 </label>
 
-                                <div className="max-h-48 overflow-auto rounded-md border border-border p-2 space-y-2">
-                                    {fields
-                                        .filter((f) => !isIdentityField(f.path))
-                                        .map((f) => (
-                                            <label key={f.path} className="flex items-center gap-2 text-sm">
-
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedFields.includes(f.path)}
-                                                    onChange={() =>
-                                                        setSelectedFields((prev) =>
-                                                            prev.includes(f.path)
-                                                                ? prev.filter((x) => x !== f.path)
-                                                                : [...prev, f.path]
-                                                        )
-                                                    }
-                                                />
-                                                <span className="truncate">{f.path}</span>
-                                            </label>
-                                        ))}
-                                </div>
+                                <FieldSelector
+                                    fields={fields}
+                                    sample={normalized.rows[0]}
+                                    selected={selectedFields}
+                                    onChange={setSelectedFields}
+                                    filter={(path) => !isIdentityField(path)}
+                                />
                             </div>
                         )}
+
 
                     {type === "card" &&
                         cardVariant === "watchlist" &&
