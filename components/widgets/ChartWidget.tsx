@@ -206,14 +206,14 @@ export default function ChartWidget({ widget }: Props) {
                 </defs>
                 <XAxis
                   dataKey="time"
-                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   axisLine={false}
                   minTickGap={40}
                   dy={8}
                 />
                 <YAxis
-                  tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                  tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(val) => `₹${val}`}
@@ -240,7 +240,7 @@ export default function ChartWidget({ widget }: Props) {
                   activeDot={{
                     r: 5,
                     strokeWidth: 2,
-                    stroke: "hsl(var(--background))",
+                    stroke: "var(--background)",
                     fill: isPositive ? "#10b981" : "#f43f5e"
                   }}
                 />
@@ -286,14 +286,14 @@ export default function ChartWidget({ widget }: Props) {
             <ComposedChart data={data}>
               <XAxis
                 dataKey="time"
-                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                 tickLine={false}
                 axisLine={false}
                 minTickGap={40}
                 dy={8}
               />
               <YAxis
-                tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }}
+                tick={{ fontSize: 9, fill: "var(--muted-foreground)" }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(val) => `₹${val}`}

@@ -29,6 +29,7 @@ export default function CustomSelect({
     const [open, setOpen] = useState(false);
     const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Update coordinates when opening
     useEffect(() => {
@@ -45,7 +46,12 @@ export default function CustomSelect({
     // Handle scroll/resize to close or update position (simple approach: close on scroll)
     useEffect(() => {
         if (!open) return;
-        const handleScroll = () => setOpen(false);
+        const handleScroll = (e: Event) => {
+            if (dropdownRef.current && dropdownRef.current.contains(e.target as Node)) {
+                return;
+            }
+            setOpen(false);
+        };
         const handleResize = () => setOpen(false);
 
         window.addEventListener("scroll", handleScroll, { capture: true });
@@ -86,6 +92,7 @@ export default function CustomSelect({
 
                     {/* Dropdown Menu */}
                     <div
+                        ref={dropdownRef}
                         className="fixed z-[10000] max-h-60 overflow-auto rounded-xl border border-border/50 bg-popover/95 backdrop-blur-md text-popover-foreground shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col p-1.5 custom-scrollbar ring-1 ring-border/20"
                         style={{
                             top: coords.top,

@@ -75,6 +75,18 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             path.toLowerCase().includes(k)
         );
 
+    function alphaFunction(interval: "daily" | "weekly" | "monthly") {
+        switch (interval) {
+            case "daily":
+                return "TIME_SERIES_DAILY";
+            case "weekly":
+                return "TIME_SERIES_WEEKLY";
+            case "monthly":
+                return "TIME_SERIES_MONTHLY";
+        }
+    }
+
+
 
     function resetForm() {
         setTitle("");
@@ -196,7 +208,7 @@ export default function AddWidgetModal({ open, onClose }: AddWidgetModalProps) {
             ...(type === "chart"
                 ? {
                     api: {
-                        url: `/api/alpha-vantage?symbol=${chartTicker}&interval=${chartInterval}`,
+                        url: `/api/alpha-vantage?symbol=${chartTicker}&function=${alphaFunction(chartInterval)}`,
                         refreshInterval,
                     },
                     chart: {
